@@ -1,4 +1,4 @@
-import { contentHash, type Product } from "../model";
+import { contentHash, type Product, type SKU } from "../model";
 import { readyIssues } from "./approval";
 import { define, fail, success, type Failure } from "./contract";
 export const capabilities = {
@@ -16,9 +16,17 @@ export type ExportPackage = {
   contentHash: string;
   channel: "smartstore";
   title: string;
+  price: number;
   description: string;
   options: string;
-  images: { filename: string; mime: string; dataUrl: string; sha256: string }[];
+  skus: SKU[];
+  images: {
+    assetId: string;
+    filename: string;
+    mime: string;
+    dataUrl: string;
+    sha256: string;
+  }[];
   checklist: string[];
 };
 export const exportChannel = define<
@@ -41,9 +49,18 @@ export const exportChannel = define<
       contentHash: digest,
       channel: "smartstore",
       title: product.draft!.title,
+      price: Number(product.facts.find((fact) => fact.key === "price")!.value),
       description: product.draft!.description,
       options: product.options,
+      skus: (product.skus ?? []).map((s) => ({
+        id: s.id,
+        label: s.label,
+        price: s.price,
+        stock: s.stock,
+        assetId: s.assetId,
+      })),
       images: product.assets.map((a, i) => ({
+        assetId: a.id,
         filename: `product-${i + 1}.${a.mime.split("/")[1]}`,
         mime: a.mime,
         dataUrl: a.dataUrl,

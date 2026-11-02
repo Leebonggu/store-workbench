@@ -1,7 +1,10 @@
-import type { Product } from "../model";
+import { koreaDay, type Product } from "../model";
 import { define, fail, success } from "./contract";
 export function rightsIssues(p: Product): string[] {
   return [
+    ...(p.rightsExpiresOn && koreaDay() > p.rightsExpiresOn
+      ? ["사용 권한의 확인 기간이 만료되었습니다 (한국 날짜 기준)."]
+      : []),
     ...(!p.channelRights || !p.rightsNote.trim()
       ? ["스마트스토어 판매·자료 사용 범위 확인이 필요합니다."]
       : []),

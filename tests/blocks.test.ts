@@ -266,7 +266,7 @@ test("storage recovers valid draft and reports corrupt or quota errors without o
   for (const raw of ["{bad", JSON.stringify([{ schemaVersion: 99 }])])
     assert.ok((await load({ getItem: () => raw })).error);
   assert.ok(
-    save(
+    await save(
       {
         setItem: () => {
           throw new Error("QuotaExceeded");

@@ -22,10 +22,17 @@ export const composeDetail = define<{ product: Product; copy: Copy }, Draft>(
       title: copy.title,
       description: [
         ...copy.lines,
+        ...(product.skus ?? []).map(
+          (s) => `옵션: ${s.label} / ${s.price.toLocaleString("ko-KR")}원`,
+        ),
         ...(product.options.trim()
           ? [`옵션 안내 (판매자 입력): ${product.options.trim()}`]
           : []),
       ].join("\n"),
+      layout: product.draft?.layout ?? {
+        order: "photos-first",
+        accent: "forest",
+      },
       assetIds: product.assets.map((a) => a.id),
     });
   },

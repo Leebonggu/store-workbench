@@ -2,13 +2,16 @@ import { validateProduct, type Product } from "./model";
 export const STORAGE_KEY = "store-workbench:v1";
 export const CONFLICT =
   "다른 탭 또는 작업에서 자료가 바뀌었습니다. 입력 중인 내용을 보관한 뒤 새로고침하세요. 덮어쓰기와 다운로드를 막았습니다.";
-export type Store = Pick<Storage, "getItem" | "setItem">;
+export type Store = {
+  getItem(key: string): string | null | Promise<string | null>;
+  setItem(key: string, value: string): void | Promise<void>;
+};
 export async function load(
-  storage: Pick<Storage, "getItem">,
+  storage: Pick<Store, "getItem">,
 ): Promise<{ products: Product[]; snapshot: string | null; error?: string }> {
   let snapshot: string | null = null;
   try {
-    snapshot = storage.getItem(STORAGE_KEY);
+    snapshot = await storage.getItem(STORAGE_KEY);
     if (!snapshot) return { products: [], snapshot };
     const parsed: unknown = JSON.parse(snapshot);
     if (!Array.isArray(parsed)) throw Error("schema");
@@ -39,18 +42,18 @@ export async function load(
     };
   }
 }
-export function save(
-  storage: Pick<Storage, "setItem">,
+export async function save(
+  storage: Pick<Store, "setItem">,
   products: Product[],
-): string | undefined {
+): Promise<string | undefined> {
   try {
-    storage.setItem(STORAGE_KEY, JSON.stringify(products));
+    await storage.setItem(STORAGE_KEY, JSON.stringify(products));
     return undefined;
   } catch {
     return "저장 공간이 부족하거나 저장이 차단되었습니다. 변경을 적용하지 않았습니다. 사진 크기를 줄이거나 저장 권한을 확인하세요.";
   }
 }
-export type Exclusive = <T>(operation: () => T) => Promise<T>;
+export type Exclusive = <T>(operation: () => T | Promise<T>) => Promise<T>;
 export const browserExclusive: Exclusive = async (operation) => {
   if (!navigator.locks) throw Error("Web Locks unavailable");
   return navigator.locks.request(STORAGE_KEY, { mode: "exclusive" }, operation);
@@ -71,10 +74,11 @@ export async function saveIfCurrent(
     if (issue) return { ok: false, error: issue };
   }
   try {
-    return await exclusive(() => {
-      if (!stillCurrent() || storage.getItem(STORAGE_KEY) !== expected)
+    return await exclusive(async () => {
+      if (!stillCurrent() || (await storage.getItem(STORAGE_KEY)) !== expected)
         return { ok: false as const, error: CONFLICT };
-      const error = save(storage, candidate);
+      if (!stillCurrent()) return { ok: false as const, error: CONFLICT };
+      const error = await save(storage, candidate);
       if (error) return { ok: false as const, error };
       const snapshot = JSON.stringify(candidate);
       afterSave?.(); // synchronous side effect; no await while holding freshness

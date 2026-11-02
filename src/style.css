@@ -397,3 +397,50 @@ form > button {
     height: 62px;
   }
 }
+
+.backup-bar {
+  margin: 0 5vw 20px;
+  padding: 16px;
+  border: 1px solid #dce3dd;
+  border-radius: 12px;
+  background: #fff;
+}
+.backup-bar > span {
+  font-size: 12px;
+  margin-left: 12px;
+  color: #67796c;
+}
+.backup-bar form {
+  margin-top: 12px;
+}
+.sku-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 2fr;
+  gap: 10px;
+  border-bottom: 1px solid #eee;
+  padding: 10px 0;
+}
+@media (max-width: 600px) {
+  .sku-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .backup-bar > span {
+    display: block;
+    margin: 8px 0;
+  }
+}
+
+.rendered-preview {
+  display: flex;
+  gap: 12px;
+  overflow: auto;
+  align-items: flex-start;
+  margin: 15px 0;
+  padding: 12px;
+  background: #eef1eb;
+}
+.rendered-preview img {
+  width: min(350px, 85vw);
+  height: auto;
+  border: 1px solid #d8dfd3;
+}

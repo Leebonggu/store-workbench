@@ -20,6 +20,7 @@ test("delayed photo validation cannot overwrite another tab product", async ({
 }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "예시 추가" }).click();
+  await expect(page.locator(".product")).toHaveCount(1);
   const second = await context.newPage();
   await second.goto("/");
   await pauseDecode(page);
@@ -41,9 +42,11 @@ test("delayed photo validation cannot overwrite another tab product", async ({
     page.getByRole("button", { name: "원본 사진 추가", exact: true }),
   ).toBeDisabled();
   expect(
-    await page.evaluate(
-      () => JSON.parse(localStorage.getItem("store-workbench:v1")!).length,
-    ),
+    await page.evaluate(async () => {
+      // @ts-expect-error Browser Vite module
+      const { database } = await import("/src/database.ts");
+      return JSON.parse((await database.getItem("store-workbench:v1"))!).length;
+    }),
   ).toBe(2);
   await second.reload();
   await expect(second.locator(".product")).toHaveCount(2);
@@ -59,6 +62,7 @@ test("delayed export cannot download stale snapshot after another tab changes da
   );
   await page.goto("/");
   await expect(page.locator("#export")).toBeEnabled();
+  await expect(page.locator(".product")).toHaveCount(1);
   const second = await context.newPage();
   await second.goto("/");
   await pauseDecode(page);
@@ -73,9 +77,11 @@ test("delayed export cannot download stale snapshot after another tab changes da
   await expect(page.locator("#export")).toBeDisabled();
   expect(downloads).toBe(0);
   expect(
-    await page.evaluate(
-      () => JSON.parse(localStorage.getItem("store-workbench:v1")!).length,
-    ),
+    await page.evaluate(async () => {
+      // @ts-expect-error Browser Vite module
+      const { database } = await import("/src/database.ts");
+      return JSON.parse((await database.getItem("store-workbench:v1"))!).length;
+    }),
   ).toBe(2);
 });
 test("hostile restored URL never becomes markup; valid sibling draft is preserved read-only", async ({

@@ -1,9 +1,10 @@
-import { contentHash, factIssues, type Product } from "../model";
+import { contentHash, factIssues, skuIssues, type Product } from "../model";
 import { rightsIssues } from "./rights";
 import { define, fail, success } from "./contract";
 export function readyIssues(p: Product): string[] {
   return [
     ...factIssues(p),
+    ...skuIssues(p),
     ...rightsIssues(p),
     ...(!p.draft
       ? ["초안이 없습니다."]
@@ -24,7 +25,7 @@ export function readyIssues(p: Product): string[] {
       : []),
     ...(p.draft &&
     (p.draft.assetIds.length !== p.assets.length ||
-      p.assets.some((a) => !p.draft!.assetIds.includes(a.id)))
+      p.assets.some((a, i) => p.draft!.assetIds[i] !== a.id))
       ? ["초안 사진 연결을 갱신하세요."]
       : []),
   ];
