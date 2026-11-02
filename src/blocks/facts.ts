@@ -57,7 +57,11 @@ export const confirmFacts = define<{ product: Product; facts: Fact[] }, Fact[]>(
     if (facts.some((f) => f.confirmed && (!f.value.trim() || !f.source.trim())))
       return fail("MISSING_FACTS", "확인한 항목에는 값과 출처가 필요합니다.");
     const price = facts.find((f) => f.key === "price")!;
-    if (price.confirmed && !/^[1-9]\d*$/.test(price.value))
+    if (
+      price.confirmed &&
+      (!/^[1-9]\d*$/.test(price.value) ||
+        !Number.isSafeInteger(Number(price.value)))
+    )
       return fail(
         "INVALID_INPUT",
         "가격은 0보다 큰 원 단위 정수로 입력하세요.",

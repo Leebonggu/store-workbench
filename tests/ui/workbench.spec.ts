@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 const png = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==",
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==",
   "base64",
 );
 test("seller completes local workflow, reloads, exports, and edits invalidate approval", async ({
@@ -38,6 +38,7 @@ test("seller completes local workflow, reloads, exports, and edits invalidate ap
   await page
     .getByRole("button", { name: "현재 버전 승인", exact: true })
     .click();
+  await expect(page.locator("#notice")).toContainText("현재 내용의 해시");
   await page.reload();
   await expect(
     page.getByRole("button", { name: "등록 준비 JSON 내보내기" }),
@@ -98,6 +99,7 @@ test("another tab update blocks stale writes without deleting current input", as
 }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "예시 추가" }).click();
+  await expect(page.locator(".product")).toHaveCount(1);
   const second = await context.newPage();
   await second.goto("/");
   await page.locator("#value-name").fill("현재 탭의 미저장 편집");

@@ -1,4 +1,4 @@
-import { isProduct, type Product } from "../model";
+import { validateProduct, type Product } from "../model";
 export type Code =
   | "INVALID_INPUT"
   | "MISSING_FACTS"
@@ -54,10 +54,11 @@ export function define<I extends { product: Product }, O>(
   return {
     meta: { ...meta, cost: "none", externalTransmission: false },
     async run(input) {
-      if (!input || !isProduct(input.product))
-        return fail("INVALID_INPUT", "상품 스키마를 확인하세요.");
       try {
-        const result = await run(input);
+        const snapshot = structuredClone(input);
+        const issue = await validateProduct(snapshot?.product);
+        if (issue) return fail("INVALID_INPUT", issue);
+        const result = await run(snapshot);
         return result.ok && !validOutput(result.value)
           ? fail("INVALID_INPUT", "블록 출력이 계약과 다릅니다.")
           : result;

@@ -21,9 +21,15 @@ import {
   unsupportedChannelOperation,
 } from "../src/blocks/channel";
 import { generateDraft } from "../src/pipeline";
-import { load, save } from "../src/storage";
+import {
+  load,
+  save,
+  saveIfCurrent,
+  CONFLICT,
+  type Exclusive,
+} from "../src/storage";
 const png =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==";
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==";
 async function fixture(): Promise<Product> {
   let p = newProduct("synthetic-test");
   p.facts = p.facts.map((f) =>
@@ -253,9 +259,12 @@ test("approval needs explicit reviewer and visual check", async () => {
 });
 test("storage recovers valid draft and reports corrupt or quota errors without overwriting", async () => {
   const p = await fixture();
-  assert.deepEqual(load({ getItem: () => JSON.stringify([p]) }).products, [p]);
+  assert.deepEqual(
+    (await load({ getItem: () => JSON.stringify([p]) })).products,
+    [p],
+  );
   for (const raw of ["{bad", JSON.stringify([{ schemaVersion: 99 }])])
-    assert.ok(load({ getItem: () => raw }).error);
+    assert.ok((await load({ getItem: () => raw })).error);
   assert.ok(
     save(
       {
@@ -298,4 +307,122 @@ test("asset block rejects forged image MIME", async () => {
     dataUrl: "data:image/png;base64,ZmFrZQ==",
   });
   assert.equal(result.ok, false);
+});
+
+test("restore rejects hostile image attributes, invalid confirmed prices, fake bytes and bad hashes without overwriting originals", async () => {
+  const valid = await fixture();
+  const cases: Product[] = [];
+  const hostile = structuredClone(valid);
+  hostile.assets[0].dataUrl =
+    'data:image/png;base64,AA==" onerror="window.syntheticMarker=1';
+  cases.push(hostile);
+  const price = structuredClone(valid);
+  price.facts.find((f) => f.key === "price")!.value = "-1";
+  cases.push(price);
+  const bytes = structuredClone(valid);
+  bytes.assets[0].dataUrl = "data:image/png;base64,ZmFrZQ==";
+  cases.push(bytes);
+  const hash = structuredClone(valid);
+  hash.assets[0].sha256 = "0".repeat(64);
+  cases.push(hash);
+  for (const bad of cases) {
+    bad.id = "bad";
+    const raw = JSON.stringify([valid, bad]);
+    const restored = await load({ getItem: () => raw });
+    assert.ok(restored.error);
+    assert.deepEqual(restored.products, [valid]);
+    assert.equal(restored.snapshot, raw);
+    for (const result of [
+      await generateDraft(bad),
+      await approve.run({
+        product: bad,
+        expectedVersion: bad.version,
+        reviewer: "test",
+        visualReviewed: true,
+      }),
+      await exportChannel.run({ product: bad, expectedVersion: bad.version }),
+    ])
+      assert.equal(result.ok, false);
+  }
+});
+test("strict image parsing rejects truncated bytes, invalid dimensions, MIME mismatch and noncanonical base64", async () => {
+  const p = await fixture();
+  for (const value of [
+    png + '" onerror="alert(1)',
+    png.replace("image/png", "image/jpeg"),
+    png.slice(0, -4),
+    "data:image/png;base64,AA",
+  ]) {
+    assert.equal(
+      (
+        await manageAsset.run({
+          product: newProduct(),
+          name: "bad",
+          source: "synthetic",
+          dataUrl: value,
+        })
+      ).ok,
+      false,
+    );
+  }
+  const bad = structuredClone(p);
+  bad.assets[0].mime = "image/jpeg";
+  assert.equal((await generateDraft(bad)).ok, false);
+});
+test("snapshot-checked commits reject delayed and same-tab stale work before side effects", async () => {
+  const p = newProduct("one");
+  let raw: string | null = JSON.stringify([p]);
+  const initial = raw;
+  let effects = 0;
+  const storage = {
+    getItem: () => raw,
+    setItem: (_key: string, value: string) => {
+      raw = value;
+    },
+  };
+  const exclusive: Exclusive = async (operation) => operation();
+  raw = JSON.stringify([p, newProduct("two")]);
+  const r = await saveIfCurrent(
+    storage,
+    initial,
+    [p],
+    exclusive,
+    () => true,
+    () => effects++,
+  );
+  assert.ok(!r.ok);
+  assert.equal(r.error, CONFLICT);
+  assert.equal(JSON.parse(raw).length, 2);
+  assert.equal(effects, 0);
+  const stale = await saveIfCurrent(
+    storage,
+    raw,
+    [p],
+    exclusive,
+    () => false,
+    () => effects++,
+  );
+  assert.ok(!stale.ok);
+  assert.equal(effects, 0);
+});
+test("serialized commits sharing the same snapshot cannot overwrite each other", async () => {
+  let raw: string | null = null,
+    queue: Promise<unknown> = Promise.resolve();
+  const storage = {
+    getItem: () => raw,
+    setItem: (_key: string, value: string) => {
+      raw = value;
+    },
+  };
+  const exclusive: Exclusive = (operation) => {
+    const next = queue.then(operation);
+    queue = next;
+    return next;
+  };
+  const results = await Promise.all([
+    saveIfCurrent(storage, null, [newProduct("one")], exclusive, () => true),
+    saveIfCurrent(storage, null, [newProduct("two")], exclusive, () => true),
+  ]);
+  assert.equal(results.filter((r) => r.ok).length, 1);
+  assert.equal(results.filter((r) => !r.ok).length, 1);
 });

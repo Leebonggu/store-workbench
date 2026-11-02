@@ -1,8 +1,9 @@
-import { contentHash, type Product } from "../model";
+import { contentHash, factIssues, type Product } from "../model";
 import { rightsIssues } from "./rights";
 import { define, fail, success } from "./contract";
 export function readyIssues(p: Product): string[] {
   return [
+    ...factIssues(p),
     ...rightsIssues(p),
     ...(!p.draft
       ? ["초안이 없습니다."]

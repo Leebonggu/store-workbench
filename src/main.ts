@@ -7,7 +7,14 @@ import {
   type Product,
   type Fact,
 } from "./model";
-import { load, save } from "./storage";
+import {
+  load,
+  saveIfCurrent,
+  browserExclusive,
+  STORAGE_KEY,
+  CONFLICT,
+} from "./storage";
+import { parseImageDataUrl } from "./media";
 import { captureGuide } from "./blocks/capture";
 import { manageAsset } from "./blocks/assets";
 import { candidateFacts, confirmFacts } from "./blocks/facts";
@@ -16,11 +23,13 @@ import { exportChannel } from "./blocks/channel";
 import { generateDraft } from "./pipeline";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
-const loaded = load(localStorage);
-let products = loaded.products;
-let selected: string | undefined = products[0]?.id;
-let storageBlocked = !!loaded.error;
-let message = loaded.error ?? "";
+let products: Product[] = [];
+let storageSnapshot: string | null = null;
+let operationSnapshot: string | null = null;
+let operationState = "";
+let selected: string | undefined;
+let storageBlocked = true;
+let message = "저장 자료를 검증하고 있습니다.";
 let busy = false;
 let dirty: string | undefined;
 let filter = "all";
@@ -45,16 +54,32 @@ function status(p: Product) {
   if (!p.draft || p.draft.sourceVersion !== p.version) return "정보·초안 준비";
   return "검수 대기";
 }
-function commit(p: Product, notice: string): boolean {
+async function commit(
+  p: Product,
+  notice: string,
+  afterSave?: () => void,
+): Promise<boolean> {
   const next = products.some((v) => v.id === p.id)
     ? products.map((v) => (v.id === p.id ? p : v))
     : [...products, p];
-  const error = save(localStorage, next);
-  if (error) {
-    message = error;
+  const result = await saveIfCurrent(
+    localStorage,
+    operationSnapshot,
+    next,
+    browserExclusive,
+    () =>
+      !storageBlocked &&
+      storageSnapshot === operationSnapshot &&
+      JSON.stringify(products) === operationState,
+    afterSave,
+  );
+  if (!result.ok) {
+    message = result.error;
+    if (result.error === CONFLICT) storageBlocked = true;
     showMessage();
     return false;
   }
+  storageSnapshot = result.snapshot;
   products = next;
   selected = p.id;
   dirty = undefined;
@@ -78,16 +103,31 @@ function allowed(form?: string) {
 async function act(action: () => Promise<void>, form?: string) {
   if (!allowed(form)) return;
   busy = true;
+  message = "자료 검증·저장 중입니다. 완료 안내가 나올 때까지 기다려 주세요.";
+  showMessage();
+  operationSnapshot = storageSnapshot;
+  operationState = JSON.stringify(products);
+  const fields = Array.from(
+    document.querySelectorAll<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >("input, textarea, select"),
+  ).map((element) => ({ element, disabled: element.disabled }));
+  // Capture form inputs before disabling them: FormData omits disabled inputs.
   document
     .querySelectorAll<HTMLButtonElement>("button")
     .forEach((b) => (b.disabled = true));
   try {
-    await action();
+    const running = action();
+    fields.forEach(({ element }) => (element.disabled = true));
+    await running;
   } catch {
     message = "작업을 끝내지 못했습니다. 저장된 상품과 초안은 유지됩니다.";
     showMessage();
   } finally {
     busy = false;
+    fields.forEach(({ element, disabled }) => {
+      if (element.isConnected) element.disabled = storageBlocked || disabled;
+    });
     document
       .querySelectorAll<HTMLButtonElement>("button")
       .forEach(
@@ -112,6 +152,16 @@ function render() {
     document
       .querySelectorAll<HTMLButtonElement>("button")
       .forEach((b) => (b.disabled = true));
+  if (p)
+    document
+      .querySelectorAll<HTMLImageElement>("img[data-asset-id]")
+      .forEach((img) => {
+        const asset = p.assets.find((a) => a.id === img.dataset.assetId);
+        if (asset && parseImageDataUrl(asset.dataUrl, asset.mime)) {
+          img.src = asset.dataUrl;
+          img.alt = asset.name;
+        }
+      });
   bind();
   if (p)
     void captureGuide.run({ product: p }).then((result) => {
@@ -126,39 +176,41 @@ function editor(p: Product) {
   const issues = readyIssues(p);
   return `<div class="workspace-heading"><div><small>공통 상품 · v${p.version}</small><h2>${e(name(p))}</h2></div><span class="badge">${status(p)}</span></div>
   <div class="next"><strong>다음 할 일</strong><p>${e(issues[0] ?? (p.approval ? "승인된 패키지를 내보내세요. 실제 등록은 판매자센터에서 진행합니다." : "사진·문구·옵션을 검수하고 승인하세요."))}</p></div>
-  <section class="card"><h3>01 · 사진과 출처</h3><p class="muted" id="capture-guide">촬영 안내를 준비합니다.</p><p class="muted">자동 촬영·품질 판정은 미지원입니다.</p><div class="assets">${p.assets.map((a) => `<figure><img src="${a.dataUrl}" alt="${e(a.name)}"><figcaption>${e(a.name)}<small>${a.rightsConfirmed ? "사용 권한 확인" : "사용 권한 미확인"}</small></figcaption><button type="button" data-remove-asset="${e(a.id)}">제거</button></figure>`).join("")}</div>
+  <section class="card"><h3>01 · 사진과 출처</h3><p class="muted" id="capture-guide">촬영 안내를 준비합니다.</p><p class="muted">자동 촬영·품질 판정은 미지원입니다.</p><div class="assets">${p.assets.map((a) => `<figure><img data-asset-id="${e(a.id)}"><figcaption>${e(a.name)}<small>${a.rightsConfirmed ? "사용 권한 확인" : "사용 권한 미확인"}</small></figcaption><button type="button" data-remove-asset="${e(a.id)}">제거</button></figure>`).join("")}</div>
   <form id="asset-form"><label>촬영·자료 출처<input name="source" placeholder="예: 직접 촬영, 공급처 제공"></label><label>원본 사진 추가 (PNG/JPEG/WebP, 2MB 이하, 최대 3장)<input name="file" type="file" accept="image/png,image/jpeg,image/webp"></label><button type="submit">원본 사진 추가</button></form><p class="muted">원본 파일을 변환하지 않습니다. 원본의 위치·촬영 정보 등 메타데이터도 보존되므로 업로드 전에 확인하세요. 패키지에는 원본이 포함됩니다.</p></section>
   <section class="card"><h3>02 · 공통 상품 정보</h3><p class="muted">확인 체크한 사실만 초안에 사용합니다. 선택 항목은 비워둘 수 있습니다.</p>
   <form id="facts-form"><div class="fact-grid"><span>항목</span><span>값</span><span>확인 근거</span><span>확인</span>${p.facts.map((f) => `<label for="value-${f.key}">${LABELS[f.key]}</label><input id="value-${f.key}" name="value-${f.key}" value="${e(f.value)}" ${f.key === "price" ? 'inputmode="numeric"' : ""}><input aria-label="${LABELS[f.key]} 출처" name="source-${f.key}" value="${e(f.source)}" placeholder="라벨·공급처 자료 등"><input aria-label="${LABELS[f.key]} 확인" name="confirmed-${f.key}" type="checkbox" ${f.confirmed ? "checked" : ""}>`).join("")}</div><label>옵션 안내 (직접 확인한 내용만)<textarea name="options" rows="2">${e(p.options)}</textarea></label><p class="muted">옵션별 SKU·가격·재고와 필수 상품정보 고시는 이 버전에서 관리하지 않습니다. 판매자센터에서 별도로 확인하세요.</p><button type="submit">확인 정보 저장</button></form>
   <details><summary>텍스트에서 미확인 후보 가져오기</summary><p class="muted">AI/OCR이 아닌 로컬 파서입니다. 기존 값이 있으면 덮어쓰지 않습니다.</p><form id="candidate-form"><label>후보 정보<textarea name="text" rows="3" placeholder="name:새 상품&#10;material:소재"></textarea></label><label>출처<input name="source" placeholder="자료 이름"></label><button>후보만 가져오기</button></form></details></section>
-  <section class="card"><h3>03 · 권리·판매 범위</h3><form id="rights-form">${p.assets.map((a) => `<label class="check"><input type="checkbox" name="asset-${a.id}" ${a.rightsConfirmed ? "checked" : ""}>${e(a.name)}의 온라인 사용 권한을 확인했습니다.</label>`).join("")}<label class="check"><input type="checkbox" name="channel" ${p.channelRights ? "checked" : ""}>상품과 자료의 스마트스토어 판매·사용 범위를 확인했습니다.</label><label>검토 메모·증빙 위치 (내부 기록, 패키지에서 제외)<textarea name="note" rows="2">${e(p.rightsNote)}</textarea></label><p class="muted">사진 사용, 상품 관련 권리, 계약상 채널 제한을 각각 검토하세요. 법적 적합성 자동 판단은 하지 않습니다. 만료일 자동 처리·증빙 파일 보관은 후속 범위입니다.</p><button>권리 확인 저장</button></form></section>
-  <section class="card"><div class="list-heading"><h3>04 · 스마트스토어 초안</h3><button id="generate">저장된 정보로 초안 만들기</button></div><p class="muted">결정적 로컬 템플릿 · AI 아님 · 검색량·상위 노출·공식 규칙 검증 없음. 재생성은 기존 편집을 바꾸므로 아래 확인이 필요합니다.</p>${p.draft ? `<label class="check"><input type="checkbox" id="replace-draft">현재 편집 초안을 새 초안으로 교체합니다.</label><form id="draft-form"><label>상품명<input name="title" value="${e(p.draft.title)}"></label><label>상세 설명<textarea name="description" rows="7">${e(p.draft.description)}</textarea></label><button>초안 편집 저장</button></form><div class="preview"><span>미리보기 · 상품 v${p.draft.sourceVersion} / 초안 v${p.draft.version}</span><h4>${e(p.draft.title)}</h4>${p.assets.map((a) => `<img src="${a.dataUrl}" alt="${e(a.name)}">`).join("")}<p>${e(p.draft.description)}</p></div>` : '<p class="empty">상품명과 가격을 확인한 뒤 초안을 만드세요.</p>'}</section>
+  <section class="card"><h3>03 · 권리·판매 범위</h3><form id="rights-form">${p.assets.map((a) => `<label class="check"><input type="checkbox" name="asset-${e(a.id)}" ${a.rightsConfirmed ? "checked" : ""}>${e(a.name)}의 온라인 사용 권한을 확인했습니다.</label>`).join("")}<label class="check"><input type="checkbox" name="channel" ${p.channelRights ? "checked" : ""}>상품과 자료의 스마트스토어 판매·사용 범위를 확인했습니다.</label><label>검토 메모·증빙 위치 (내부 기록, 패키지에서 제외)<textarea name="note" rows="2">${e(p.rightsNote)}</textarea></label><p class="muted">사진 사용, 상품 관련 권리, 계약상 채널 제한을 각각 검토하세요. 법적 적합성 자동 판단은 하지 않습니다. 만료일 자동 처리·증빙 파일 보관은 후속 범위입니다.</p><button>권리 확인 저장</button></form></section>
+  <section class="card"><div class="list-heading"><h3>04 · 스마트스토어 초안</h3><button id="generate">저장된 정보로 초안 만들기</button></div><p class="muted">결정적 로컬 템플릿 · AI 아님 · 검색량·상위 노출·공식 규칙 검증 없음. 재생성은 기존 편집을 바꾸므로 아래 확인이 필요합니다.</p>${p.draft ? `<label class="check"><input type="checkbox" id="replace-draft">현재 편집 초안을 새 초안으로 교체합니다.</label><form id="draft-form"><label>상품명<input name="title" value="${e(p.draft.title)}"></label><label>상세 설명<textarea name="description" rows="7">${e(p.draft.description)}</textarea></label><button>초안 편집 저장</button></form><div class="preview"><span>미리보기 · 상품 v${p.draft.sourceVersion} / 초안 v${p.draft.version}</span><h4>${e(p.draft.title)}</h4>${p.assets.map((a) => `<img data-asset-id="${e(a.id)}">`).join("")}<p>${e(p.draft.description)}</p></div>` : '<p class="empty">상품명과 가격을 확인한 뒤 초안을 만드세요.</p>'}</section>
   <section class="card"><h3>05 · 검수·승인·내보내기</h3>${issues.length ? `<ul class="issues">${issues.map((i) => `<li>${e(i)}</li>`).join("")}</ul>` : '<p class="good">초안의 기본 확인 항목을 충족했습니다. 공식 등록 필수값은 별도 확인하세요.</p>'}<form id="approval-form"><label>검수자<input name="reviewer" placeholder="검수자 이름 또는 별칭"></label><label class="check"><input name="reviewed" type="checkbox">사진의 색상·형태·구성, 문구의 사실, 옵션을 확인했습니다.</label><button ${issues.length ? 'disabled data-disabled="true"' : ""}>현재 버전 승인</button></form>${p.approval ? `<p class="good">${e(p.approval.reviewer)} 승인 · ${new Date(p.approval.at).toLocaleString("ko-KR")}</p>` : ""}<button id="export" class="primary" ${!p.approval ? 'disabled data-disabled="true"' : ""}>등록 준비 JSON 내보내기</button><p class="muted">문구와 원본 이미지(data URL)를 담은 JSON입니다. 판매자센터에 직접 업로드되는 형식이 아닙니다. 이미지 파일 별도 다운로드·ZIP·HTML 상세 이미지 렌더링은 후속 범위입니다.</p><p class="muted">공식 API create / update / status: 지원 안 함</p></section>`;
 }
 function bind() {
   document.querySelector<HTMLButtonElement>("#new")!.onclick = () => {
-    if (allowed()) commit(newProduct(), "새 상품을 추가했습니다.");
+    void act(async () => {
+      await commit(newProduct(), "새 상품을 추가했습니다.");
+    });
   };
-  document.querySelector<HTMLButtonElement>("#sample")!.onclick = () => {
-    if (!allowed()) return;
-    const p = newProduct();
-    p.facts[0] = {
-      key: "name",
-      value: "[합성 예시] 작은 메모 카드",
-      source: "직접 만든 테스트 데이터",
-      confirmed: false,
-    };
-    p.facts[1] = {
-      key: "price",
-      value: "3000",
-      source: "직접 만든 테스트 데이터",
-      confirmed: false,
-    };
-    commit(
-      p,
-      "합성 예시입니다. 실상품 정보가 아니며 사진·권리·사실 확인이 필요합니다.",
-    );
-  };
+  document.querySelector<HTMLButtonElement>("#sample")!.onclick = () =>
+    void act(async () => {
+      const p = newProduct();
+      p.facts[0] = {
+        key: "name",
+        value: "[합성 예시] 작은 메모 카드",
+        source: "직접 만든 테스트 데이터",
+        confirmed: false,
+      };
+      p.facts[1] = {
+        key: "price",
+        value: "3000",
+        source: "직접 만든 테스트 데이터",
+        confirmed: false,
+      };
+      await commit(
+        p,
+        "합성 예시입니다. 실상품 정보가 아니며 사진·권리·사실 확인이 필요합니다.",
+      );
+    });
   document.querySelectorAll<HTMLButtonElement>("[data-product]").forEach(
     (b) =>
       (b.onclick = () => {
@@ -192,17 +244,16 @@ function bind() {
   );
   document.querySelectorAll<HTMLButtonElement>("[data-remove-asset]").forEach(
     (b) =>
-      (b.onclick = () => {
-        if (allowed()) {
+      (b.onclick = () =>
+        void act(async () => {
           const p = current()!;
-          commit(
+          await commit(
             revise(p, {
               assets: p.assets.filter((a) => a.id !== b.dataset.removeAsset),
             }),
             "사진 연결을 제거했습니다. 원본 파일은 기기에 그대로 있습니다.",
           );
-        }
-      }),
+        })),
   );
   document.querySelectorAll<HTMLFormElement>("form").forEach((f) => {
     const cancel = document.createElement("button");
@@ -242,7 +293,7 @@ function bind() {
       showMessage();
       return;
     }
-    commit(
+    await commit(
       revise(p, {
         facts: result.value,
         options: String(data.get("options") ?? ""),
@@ -270,7 +321,7 @@ function bind() {
       showMessage();
       return;
     }
-    commit(
+    await commit(
       revise(p, {
         facts: p.facts.map(
           (f) => result.value.find((n) => n.key === f.key) ?? f,
@@ -292,15 +343,6 @@ function bind() {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-    const image = new Image();
-    image.src = dataUrl;
-    try {
-      await image.decode();
-    } catch {
-      message = "열 수 없는 이미지입니다. 기존 자료는 유지됩니다.";
-      showMessage();
-      return;
-    }
     const result = await manageAsset.run({
       product: p,
       name: file.name,
@@ -312,13 +354,13 @@ function bind() {
       showMessage();
       return;
     }
-    commit(
+    await commit(
       revise(p, { assets: [...p.assets, result.value] }),
       "원본을 추가했습니다. 사진 사용 권한을 확인하세요.",
     );
   });
-  form("rights-form", async (data, p) =>
-    commit(
+  form("rights-form", async (data, p) => {
+    await commit(
       revise(p, {
         assets: p.assets.map((a) => ({
           ...a,
@@ -328,10 +370,8 @@ function bind() {
         rightsNote: String(data.get("note") ?? "").trim(),
       }),
       "권리 상태를 저장했습니다. 이전 승인은 해제되었습니다.",
-    )
-      ? undefined
-      : undefined,
-  );
+    );
+  });
   const generate = document.querySelector<HTMLButtonElement>("#generate");
   if (generate)
     generate.onclick = () =>
@@ -352,7 +392,7 @@ function bind() {
           showMessage();
           return;
         }
-        commit(
+        await commit(
           {
             ...p,
             draft: result.value,
@@ -364,7 +404,7 @@ function bind() {
         );
       });
   form("draft-form", async (data, p) => {
-    commit(
+    await commit(
       editDraft(p, String(data.get("title")), String(data.get("description"))),
       "초안을 저장했습니다. 현재 내용으로 다시 승인하세요.",
     );
@@ -381,7 +421,7 @@ function bind() {
       showMessage();
       return;
     }
-    commit(
+    await commit(
       { ...p, approval: result.value },
       "현재 내용의 해시와 검수자를 기록했습니다. 외부 게시하지 않았습니다.",
     );
@@ -400,16 +440,7 @@ function bind() {
           showMessage();
           return;
         }
-        const blob = new Blob([JSON.stringify(result.value, null, 2)], {
-          type: "application/json",
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `product-${p.id}-v${p.version}.json`;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-        commit(
+        await commit(
           {
             ...p,
             exported: {
@@ -418,13 +449,24 @@ function bind() {
             },
           },
           "패키지 다운로드를 요청했습니다. 게시 완료가 아니며 파일 저장 여부는 브라우저에서 확인하세요.",
+          () => {
+            const blob = new Blob([JSON.stringify(result.value, null, 2)], {
+              type: "application/json",
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `product-${p.id}-v${p.version}.json`;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          },
         );
       });
 }
-render();
+app.textContent = message;
 
 window.addEventListener("storage", (event) => {
-  if (event.key === "store-workbench:v1") {
+  if (event.key === STORAGE_KEY || event.key === null) {
     storageBlocked = true;
     message =
       "다른 탭에서 자료가 바뀌었습니다. 입력 중인 내용을 따로 보관한 뒤 새로고침하세요. 덮어쓰기를 막았습니다.";
@@ -433,4 +475,19 @@ window.addEventListener("storage", (event) => {
       .querySelectorAll<HTMLButtonElement>("button")
       .forEach((b) => (b.disabled = true));
   }
+});
+
+void load(localStorage).then((loaded) => {
+  products = loaded.products;
+  storageSnapshot = loaded.snapshot;
+  selected = products[0]?.id;
+  let changed = true;
+  try {
+    changed = localStorage.getItem(STORAGE_KEY) !== loaded.snapshot;
+  } catch {
+    /* remain blocked */
+  }
+  storageBlocked = !!loaded.error || changed;
+  message = loaded.error ?? (changed ? CONFLICT : "");
+  render();
 });
