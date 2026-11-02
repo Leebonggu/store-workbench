@@ -1,4 +1,5 @@
 import { zipSync, strToU8 } from "fflate";
+import { validDetailPng } from "../detail-png";
 import { parseImageDataUrl } from "../media";
 import { contentHash, type Product } from "../model";
 import { exportChannel } from "./channel";
@@ -30,28 +31,17 @@ export const packageZip = define<
         (p, i) =>
           p.sourceHash !== sourceHash ||
           p.filename !== `detail-${String(i + 1).padStart(3, "0")}.png` ||
-          !(p.bytes instanceof Uint8Array) ||
-          p.bytes.length < 24 ||
-          p.bytes.length > 12 * 1024 * 1024 ||
-          ![137, 80, 78, 71, 13, 10, 26, 10].every(
-            (n, i) => p.bytes[i] === n,
-          ) ||
-          new DataView(
-            p.bytes.buffer,
-            p.bytes.byteOffset,
-            p.bytes.byteLength,
-          ).getUint32(16) !== p.width ||
-          new DataView(
-            p.bytes.buffer,
-            p.bytes.byteOffset,
-            p.bytes.byteLength,
-          ).getUint32(20) !== p.height ||
-          p.width !== 860 ||
-          p.height < 1 ||
-          p.height > 3000,
+          !(p.bytes instanceof Uint8Array),
       )
     )
       return fail("INVALID_INPUT", "상세 출력 페이지를 확인하세요.");
+    for (const page of pages) {
+      if (!(await validDetailPng(page.bytes, page.width, page.height)))
+        return fail(
+          "INVALID_INPUT",
+          "상세 PNG의 구조·압축 데이터·크기를 확인하세요.",
+        );
+    }
     const files: Record<string, Uint8Array> = {};
     result.value.images.forEach((image, i) => {
       const parsed = parseImageDataUrl(image.dataUrl, image.mime)!;

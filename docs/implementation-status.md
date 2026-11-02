@@ -27,7 +27,7 @@
 |---|---|
 | `npm run lint` | TypeScript 미사용 항목·Prettier 통과 |
 | `npm run typecheck` | 통과 |
-| `npm test` | 26/26 통과 |
+| `npm test` | 29/29 통과 |
 | `npm run build` | 통과 |
 | `npm run test:ui` | Chrome 10/10 통과 |
 | `npm audit --audit-level=high` | 통과 · 보고된 취약점 0건 |
@@ -51,6 +51,14 @@
 | [#2](https://github.com/Leebonggu/store-workbench/issues/2) 복원 이미지 HTML 삽입 | 엄격 데이터 URL 검증 + DOM 속성 할당 + 비실행 회귀 |
 | [#3](https://github.com/Leebonggu/store-workbench/issues/3) 복원 의미/이미지 무결성 | 복원·블록·승인·출력 경계의 공통 검증 |
 | [#4](https://github.com/Leebonggu/store-workbench/issues/4) 첫 로컬 사용 흐름 | ZIP·백업·SKU·만료일·문서·CI 구현 및 합성 검증 |
+
+## 추가 독립 검수 수정 · #5
+
+[이슈 #5](https://github.com/Leebonggu/store-workbench/issues/5)는 재사용 ZIP 블록에 24바이트 가짜 PNG를 직접 전달하면 손상 파일이 출력되던 문제입니다. 정상 UI 렌더링은 유효했지만 블록 입력 경계를 강화했습니다.
+
+`src/detail-png.ts`에서 지원 출력인 정적·비인터레이스 8비트 RGB/RGBA의 IHDR/IDAT/IEND 순서·크기·CRC·일치 치수를 확인합니다. 네이티브 zlib 스트림을 제한된 크기로 해제하고 체크섬·정확한 스캔라인 길이·필터를 확인한 뒤 ZIP에 넣습니다. 서명만 있는 입력, 누락/중복/잘린 청크, CRC 오류, 지원하지 않는 모드·애니메이션, 불연속 IDAT, 손상/잘린 압축 데이터, 잘못된 체크섬/필터, 과소·초과 픽셀 바이트를 거부합니다. 정상 RGB/RGBA·연속 분할 IDAT의 바이트 보존도 검사합니다.
+
+단위 테스트 3개를 추가했고 기존 실제 PNG 미리보기→ZIP 압축 해제 브라우저 흐름도 재검증합니다. 브라우저는 Web Locks뿐 아니라 DecompressionStream을 지원해야 하며 지원하지 않으면 출력이 실패하고 기존 초안은 유지됩니다.
 
 ## 부분 구현과 외부 전제
 

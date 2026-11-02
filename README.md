@@ -41,7 +41,7 @@ npm run test:ui
 npm audit --audit-level=high
 ```
 
-로컬 UI 검사는 설치된 Google Chrome과 비어 있는 localhost 4178을 사용합니다. CI에서는 Playwright Chromium을 설치합니다. `npm run build`는 로컬 빌드이며 배포하지 않습니다. 최신 검증: 단위 26개, 브라우저 10개, lint·typecheck·build 통과. [검증 범위와 한계](docs/implementation-status.md)를 확인하세요.
+로컬 UI 검사는 설치된 Google Chrome과 비어 있는 localhost 4178을 사용합니다. CI에서는 Playwright Chromium을 설치합니다. `npm run build`는 로컬 빌드이며 배포하지 않습니다. 최신 검증: 단위 29개, 브라우저 10개, lint·typecheck·build 통과. [검증 범위와 한계](docs/implementation-status.md)를 확인하세요.
 
 ## 기능 블록과 폴더
 
@@ -74,3 +74,5 @@ npm audit --audit-level=high
 - 실상품 5개 시험, 권리 문제 유형 확인, 판매자 필수 고시·배송·인증 매핑은 후속입니다. 로컬 승인은 공식 등록 가능 판정이 아닙니다.
 
 초기 독립 검수 결함 [#1](https://github.com/Leebonggu/store-workbench/issues/1)·[#2](https://github.com/Leebonggu/store-workbench/issues/2)·[#3](https://github.com/Leebonggu/store-workbench/issues/3)은 회귀 테스트와 함께 수정했습니다. 현재 사용 흐름은 [#4](https://github.com/Leebonggu/store-workbench/issues/4)에서 추적합니다. CI는 검증만 실행하며 배포 단계가 없습니다.
+
+추가 독립 검수 [#5](https://github.com/Leebonggu/store-workbench/issues/5): ZIP 블록에서 상세 PNG의 청크·CRC·압축 스트림·스캔라인 크기와 필터까지 검증합니다. 지원 출력은 비인터레이스 8비트 RGB/RGBA PNG이며, 가짜 헤더·잘림·압축 손상을 거부합니다.

@@ -10,7 +10,7 @@ const u32 = (b: Uint8Array, n: number) =>
   new DataView(b.buffer, b.byteOffset, b.byteLength).getUint32(n);
 const str = (b: Uint8Array, from: number, size: number) =>
   String.fromCharCode(...b.slice(from, from + size));
-function crc32(bytes: Uint8Array): number {
+export function crc32(bytes: Uint8Array): number {
   let crc = 0xffffffff;
   for (const byte of bytes) {
     crc ^= byte;
