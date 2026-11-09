@@ -2,6 +2,7 @@ import { init } from "@flue/runtime";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import * as v from "valibot";
+import { writingModel } from "./model-provider";
 import { ProductAgent } from "./agents/product.ts";
 import { validateAgentOutput } from "../../shared/agent-contract";
 const app = new Hono();
@@ -71,7 +72,7 @@ app.use(
 app.get("/api/health", (c) =>
   c.json({
     configured: !!process.env.OPENROUTER_API_KEY,
-    model: process.env.OPENROUTER_MODEL || "openrouter/google/gemini-2.5-flash",
+    model: process.env.OPENROUTER_MODEL || writingModel,
   }),
 );
 let running = false;

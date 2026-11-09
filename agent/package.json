@@ -11,10 +11,10 @@
   "dependencies": {
     "@flue/runtime": "2.2.0",
     "hono": "^4.12.32",
-    "valibot": "1.5.0"
+    "valibot": "1.5.0",
+    "@earendil-works/pi-ai": "0.87.1"
   },
   "devDependencies": {
-    "@earendil-works/pi-ai": "0.87.1",
     "@flue/cli": "2.2.0",
     "@flue/vite": "2.2.0",
     "@types/node": "^22.10.10",

@@ -1,3 +1,5 @@
+> 2026-11-09 실호출 갱신: GPT-6.1 Sol 기본 모델로 실제 사진 3종의 Flue 요청·응답을 검증했습니다. 아래의 키 미설정/실모델 미검증 표기는 이전 시점 기록입니다. [비교·검증 결과](evaluations/2026-11-09-model-comparison.md) 참조.
+
 # v0.3 실제 연결 구성
 
 현재 AI 연결은 `agent/src/agents/product.ts`의 Flue 에이전트와 OpenRouter입니다. `src/blocks/providers.ts`는 이전 모의 후보 추출 계약이며 실연결 경로가 아닙니다.
