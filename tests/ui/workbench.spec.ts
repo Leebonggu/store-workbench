@@ -71,7 +71,9 @@ test("empty and mobile workbench keeps controls in viewport and preserves unsave
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await expect(page.getByText("첫 상품을 준비해 보세요")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "사진 한 장, 소개의 시작" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "+ 새 상품" }).click();
   await page.locator("#value-name").fill("저장 전 이름");
   await page.getByRole("button", { name: "+ 새 상품" }).click();

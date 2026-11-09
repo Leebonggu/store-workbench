@@ -178,15 +178,15 @@ function render() {
   const list = products.filter(
     (x) => filter === "all" || (filter === "hold" ? !x.approval : !!x.approval),
   );
-  app.innerHTML = `<header><a class="brand" href="#">◧ 상품 작업대 <span>Store Workbench</span></a><span class="badge">모어비쥬 작업대 v0.3</span></header>
-  <div class="intro"><div><small>매장에서 온라인까지</small><h1>밀린 신상품, 하나씩 완성하기</h1><p>사진과 확인된 정보를 모아 일관된 등록 초안을 만드세요.</p></div><button id="new" class="primary">+ 새 상품</button></div>
+  app.innerHTML = `<header><a class="brand" href="#"><span class="brand-mark">m<span>✳</span></span><span class="brand-name">morebijou<small>모어비쥬 상품 작업실</small></span></a><div class="header-note"><span class="status-dot"></span> 나만의 상품 작업실 <span class="badge">내 기기에 저장</span></div></header>
+  <div class="intro"><div><small>작은 반짝임을, 더 많은 사람에게</small><h1>오늘은 어떤 상품을 소개할까요?</h1><p>사진 한 장에서 시작하는 우리 가게 상세페이지.</p></div><button id="new" class="primary">+ 새 상품</button></div>
   <div id="notice" role="status" aria-live="polite">${e(message)}</div>
+  <main><aside><div class="list-heading"><h2>내 상품 <span>${products.length}</span></h2><span class="eyebrow">COLLECTION</span></div><div class="sample-actions"><button id="real-samples">모어비쥬 3종 불러오기</button><button id="sample" class="quiet">예시 추가</button></div><label>보기<select id="filter"><option value="all" ${filter === "all" ? "selected" : ""}>모든 상품</option><option value="hold" ${filter === "hold" ? "selected" : ""}>확인·작업 필요</option><option value="ready" ${filter === "ready" ? "selected" : ""}>승인 완료</option></select></label>
+  <div class="products">${list.length ? list.map((x) => `<button class="product ${x.id === selected ? "active" : ""}" data-product="${e(x.id)}"><span class="product-thumb">${x.assets[0] ? `<img data-product-image="${e(x.id)}" alt="">` : "✳"}</span><span class="product-info"><strong>${e(name(x))}</strong><span class="product-status">${status(x)}</span><small>${new Date(x.updatedAt).toLocaleDateString("ko-KR")}</small></span></button>`).join("") : '<p class="empty">아직 상품이 없습니다.<br>새 상품이나 합성 예시를 추가해 보세요.</p>'}</div><p class="muted">실제 게시 여부는 이 초안에서 조회하지 않습니다.</p></aside>
+  <section class="workspace">${p ? editor(p) : '<div class="welcome"><span class="welcome-art">✳</span><small>HELLO, LITTLE THINGS</small><h2>사진 한 장, 소개의 시작</h2><p>위의 <b>+ 새 상품</b>을 눌러 첫 상품을 준비하세요.<br>기존 모어비쥬 3종으로 먼저 살펴봐도 좋아요.</p><div class="welcome-steps"><span>01 사진 올리기</span><span>02 소개 만들기</span><span>03 검수하고 내보내기</span></div></div>'}</section></main>
   <section class="backup-bar"><button id="backup">비공개 전체 백업</button><span>백업에는 내부 출처·권리 메모가 포함됩니다. 공개용 ZIP과 구분해서 보관하세요.</span>
     <details id="backup-tools" ${recoveryMode ? "open" : ""}><summary>백업 복원 도구</summary><form id="restore-form"><label>비공개 백업 불러오기 (100MiB 이하)<input type="file" name="backup" accept="application/json,.json"></label><label class="check"><input name="restore-confirm" type="checkbox">기존 상품은 보존하고 백업을 새 복사본으로 추가합니다. 이전 승인은 다시 확인합니다.</label><button data-recovery="true">백업 복원</button></form></details>
     ${recoveryMode ? '<button id="raw-backup" data-recovery="true">손상 원본 복구 파일 저장</button><p>복구 시 원본 저장 문자열을 IndexedDB의 별도 복구 키에도 보관합니다.</p>' : ""}</section><div class="local-note">이 브라우저의 IndexedDB에 저장됩니다. Flue + OpenRouter 선택 연결 · 판매처 자동 등록 없음 · 내보내기는 공식 업로드 양식이 아닙니다. 기기 간 자동 동기화는 지원하지 않습니다. 백업으로 이동할 수 있습니다.</div>
-  <main><aside><div class="list-heading"><h2>작업 목록 <span>${products.length}</span></h2><button id="sample" class="quiet">예시 추가</button><button id="real-samples" class="quiet">모어비쥬 3종 불러오기</button></div><label>보기<select id="filter"><option value="all" ${filter === "all" ? "selected" : ""}>모든 상품</option><option value="hold" ${filter === "hold" ? "selected" : ""}>확인·작업 필요</option><option value="ready" ${filter === "ready" ? "selected" : ""}>승인 완료</option></select></label>
-  <div class="products">${list.length ? list.map((x) => `<button class="product ${x.id === selected ? "active" : ""}" data-product="${e(x.id)}"><strong>${e(name(x))}</strong><span>${status(x)}</span><small>v${x.version} · ${new Date(x.updatedAt).toLocaleString("ko-KR")}</small></button>`).join("") : '<p class="empty">아직 상품이 없습니다.<br>새 상품이나 합성 예시를 추가해 보세요.</p>'}</div><p class="muted">실제 게시 여부는 이 초안에서 조회하지 않습니다.</p></aside>
-  <section class="workspace">${p ? editor(p) : '<div class="welcome"><span>01 → 02 → 03</span><h2>첫 상품을 준비해 보세요</h2><p>사진과 정보 확인부터 승인·내보내기까지.<br>새 상품은 모든 권한과 사실이 미확인 상태로 시작합니다.</p></div>'}</section></main>
   <footer>공통 상품 원장 → 기능 블록 → 스마트스토어용 초안 · 사진·옵션마다 고유한 특성을 보존합니다.</footer>`;
   if (storageBlocked)
     document
@@ -221,6 +221,15 @@ function render() {
       const url = detailPreview?.urls[Number(img.dataset.detailIndex)];
       if (url) img.src = url;
     });
+  document
+    .querySelectorAll<HTMLImageElement>("img[data-product-image]")
+    .forEach((img) => {
+      const asset = products.find(
+        (item) => item.id === img.dataset.productImage,
+      )?.assets[0];
+      if (asset && parseImageDataUrl(asset.dataUrl, asset.mime))
+        img.src = asset.dataUrl;
+    });
   bind();
   if (p)
     void captureGuide.run({ product: p }).then((result) => {
@@ -234,19 +243,19 @@ function render() {
 function editor(p: Product) {
   const issues = readyIssues(p);
   return `<div class="workspace-heading"><div><small>공통 상품 · v${p.version}</small><h2>${e(name(p))}</h2></div><span class="badge">${status(p)}</span></div>
-  <div class="next"><strong>다음 할 일</strong><p>${e(issues[0] ?? (p.approval ? "승인된 패키지를 내보내세요. 실제 등록은 판매자센터에서 진행합니다." : "사진·문구·옵션을 검수하고 승인하세요."))}</p></div>
-  <section class="card"><h3>01 · 사진과 출처</h3><p class="muted" id="capture-guide">촬영 안내를 준비합니다.</p><p class="muted">자동 촬영·품질 판정은 미지원입니다.</p><div class="assets">${p.assets.map((a) => `<figure><img data-asset-id="${e(a.id)}"><figcaption>${e(a.name)}<small>${a.rightsConfirmed ? "사용 권한 확인" : "사용 권한 미확인"}</small></figcaption><button type="button" data-move-asset="${e(a.id)}">앞으로</button><button type="button" data-remove-asset="${e(a.id)}">제거</button></figure>`).join("")}</div>
+  <nav class="step-nav" aria-label="상품 작업 단계"><a href="#photos">01 사진</a><a href="#information">02 상품 정보</a><a href="#ai-writing">03 AI 소개</a><a href="#draft">04 초안</a><a href="#review">05 내보내기</a></nav><div class="next"><strong>다음 할 일</strong><p>${e(issues[0] ?? (p.approval ? "승인된 패키지를 내보내세요. 실제 등록은 판매자센터에서 진행합니다." : "사진·문구·옵션을 검수하고 승인하세요."))}</p></div>
+  <section class="card" id="photos"><div class="section-heading"><div><span class="eyebrow">STEP 01</span><h3>상품의 첫인상, 사진</h3></div><span class="section-icon">✳</span></div><p class="muted" id="capture-guide">촬영 안내를 준비합니다.</p><p class="muted">자동 촬영·품질 판정은 미지원입니다.</p><div class="assets">${p.assets.map((a) => `<figure><img data-asset-id="${e(a.id)}"><figcaption>${e(a.name)}<small>${a.rightsConfirmed ? "사용 권한 확인" : "사용 권한 미확인"}</small></figcaption><button type="button" data-move-asset="${e(a.id)}">앞으로</button><button type="button" data-remove-asset="${e(a.id)}">제거</button></figure>`).join("")}</div>
   <form id="asset-form"><label>촬영·자료 출처<input name="source" placeholder="예: 직접 촬영, 공급처 제공"></label><label>원본 사진 추가 (PNG/JPEG/WebP, 2MB 이하, 최대 3장)<input name="file" type="file" accept="image/png,image/jpeg,image/webp"></label><button type="submit">원본 사진 추가</button></form><p class="muted">원본 파일을 변환하지 않습니다. 원본의 위치·촬영 정보 등 메타데이터도 보존되므로 업로드 전에 확인하세요. 패키지에는 원본이 포함됩니다.</p></section>
-  <section class="card"><h3>02 · 공통 상품 정보</h3><p class="muted">확인 체크한 사실만 초안에 사용합니다. 선택 항목은 비워둘 수 있습니다.</p>
-  <form id="facts-form"><div class="fact-grid"><span>항목</span><span>값</span><span>확인 근거</span><span>확인</span>${p.facts.map((f) => `<label for="value-${f.key}">${LABELS[f.key]}</label><input id="value-${f.key}" name="value-${f.key}" value="${e(f.value)}" ${f.key === "price" ? 'inputmode="numeric"' : ""}><input aria-label="${LABELS[f.key]} 출처" name="source-${f.key}" value="${e(f.source)}" placeholder="라벨·공급처 자료 등"><input aria-label="${LABELS[f.key]} 확인" name="confirmed-${f.key}" type="checkbox" ${f.confirmed ? "checked" : ""}>`).join("")}</div><label>옵션 안내 (직접 확인한 내용만)<textarea name="options" rows="2">${e(p.options)}</textarea></label><p class="muted">옵션별 가격·재고는 아래 SKU 입력을 사용하세요. 필수 고시·배송·반품·인증 해당 여부는 판매자센터에서 확인해야 합니다.</p><button type="submit">확인 정보 저장</button></form>
+  <section class="card" id="information"><span class="eyebrow">STEP 02</span><h3>상품에 대해 알려주세요</h3><p class="muted">확인 체크한 사실만 초안에 사용합니다. 선택 항목은 비워둘 수 있습니다.</p>
+  <form id="facts-form"><div class="fact-grid">${p.facts.map((f) => `<div class="fact-row"><label for="value-${f.key}">${LABELS[f.key]}</label><input id="value-${f.key}" name="value-${f.key}" value="${e(f.value)}" ${f.key === "price" ? 'inputmode="numeric"' : ""}><label class="fact-source">확인 근거<input aria-label="${LABELS[f.key]} 출처" name="source-${f.key}" value="${e(f.source)}" placeholder="라벨·공급처 자료 등"></label><label class="check fact-confirm"><input aria-label="${LABELS[f.key]} 확인" name="confirmed-${f.key}" type="checkbox" ${f.confirmed ? "checked" : ""}>확인 완료</label></div>`).join("")}</div><label>옵션 안내 (직접 확인한 내용만)<textarea name="options" rows="2">${e(p.options)}</textarea></label><p class="muted">옵션별 가격·재고는 아래 SKU 입력을 사용하세요. 필수 고시·배송·반품·인증 해당 여부는 판매자센터에서 확인해야 합니다.</p><button type="submit">확인 정보 저장</button></form>
   <details><summary>텍스트에서 미확인 후보 가져오기</summary><p class="muted">AI/OCR이 아닌 로컬 파서입니다. 기존 값이 있으면 덮어쓰지 않습니다.</p><form id="candidate-form"><label>후보 정보<textarea name="text" rows="3" placeholder="name:새 상품&#10;material:소재"></textarea></label><label>출처<input name="source" placeholder="자료 이름"></label><button>후보만 가져오기</button></form></details></section>
   <section class="card"><h3>옵션별 상품 (SKU)</h3><p class="muted">옵션이 있는 경우 이름·가격·사진을 연결하세요. 입력 재고는 현재 확인값이며 실시간 동기화하지 않습니다. 마지막 빈 행은 저장하지 않습니다.</p><form id="sku-form">${[...(p.skus ?? []), { id: "", label: "", price: 0, assetId: "" }].map((sku, i) => `<div class="sku-row" data-sku-row="${i}"><input type="hidden" name="sku-id-${i}" value="${e(sku.id)}"><label>옵션 이름<input name="sku-label-${i}" value="${e(sku.label)}"></label><label>가격<input name="sku-price-${i}" type="number" min="1" value="${sku.price || ""}"></label><label>입력 재고<input name="sku-stock-${i}" type="number" min="0" value="${"stock" in sku ? (sku.stock ?? "") : ""}"></label><label>사진<select name="sku-asset-${i}"><option value="">선택</option>${p.assets.map((a) => `<option value="${e(a.id)}" ${a.id === sku.assetId ? "selected" : ""}>${e(a.name)}</option>`).join("")}</select></label></div>`).join("")}<button>옵션 저장</button></form></section>
   <section class="card"><h3>03 · 권리·판매 범위</h3><form id="rights-form">${p.assets.map((a) => `<label class="check"><input type="checkbox" name="asset-${e(a.id)}" ${a.rightsConfirmed ? "checked" : ""}>${e(a.name)}의 온라인 사용 권한을 확인했습니다.</label>`).join("")}<label class="check"><input type="checkbox" name="channel" ${p.channelRights ? "checked" : ""}>상품과 자료의 스마트스토어 판매·사용 범위를 확인했습니다.</label><label>검토 메모·증빙 위치 (내부 기록, 패키지에서 제외)<textarea name="note" rows="2">${e(p.rightsNote)}</textarea></label><label>권리 확인 유효 기한 (선택 · 한국 날짜 기준 해당일까지)<input name="expires" type="date" value="${e(p.rightsExpiresOn ?? "")}"></label><p class="muted">사진 사용, 상품 관련 권리, 계약상 채널 제한을 각각 검토하세요. 법적 적합성 자동 판단은 하지 않습니다. 기한이 지나면 승인·내보내기를 막습니다. 증빙 파일 보관은 후속 범위입니다.</p><button>권리 확인 저장</button></form></section>
-  <section class="ai-panel"><h3>AI와 상세페이지 만들기</h3><p>확인한 상품 정보와 사진으로 설명·FAQ·검색어를 제안합니다. 새로운 사실은 상품 정보에서 확인한 뒤 다시 요청하세요.</p>
+  <section class="ai-panel" id="ai-writing"><span class="eyebrow">YOUR WRITING PARTNER</span><h3>우리 상품에 어울리는 소개를 함께.</h3><p>확인한 상품 정보와 사진으로 설명·FAQ·검색어를 제안합니다. 새로운 사실은 상품 정보에서 확인한 뒤 다시 요청하세요.</p>
   <form id="ai-form"><label>원하는 설명·수정 방향<textarea name="instruction" placeholder="예: 짧고 귀엽게, 랜덤 발송 안내를 강조해줘"></textarea></label><label class="check"><input type="checkbox" name="consent">사진·확인 정보·현재 초안을 OpenRouter와 선택한 모델 제공자에 전송합니다. 호출 비용이 발생합니다.</label><button class="primary">AI 제안 받기</button></form>
   ${p.agentProposal ? `<div class="ai-result"><h4>AI 제안 · 상품 v${p.agentProposal.sourceVersion}</h4><strong>${e(p.agentProposal.title)}</strong><p>${e(p.agentProposal.description)}</p><h4>확인할 질문</h4><p>${e(p.agentProposal.questions.join("\n") || "추가 질문 없음 · 최종 사실 검수 필요")}</p><h4>사진 관찰 후보 · 사실 확정 아님</h4><p>${e(p.agentProposal.observations.join("\n"))}</p><h4>관련 검색어 제안 · 검색량 미검증</h4><p>${e(p.agentProposal.keywords.join(", "))}</p><h4>등록 전 확인</h4><p>${e(p.agentProposal.checklist.join("\n"))}</p><button id="apply-ai">제안을 편집 초안으로 적용</button><p class="muted">기존 편집 초안이 교체되고 승인이 해제됩니다. 아래에서 수정·검수 후 승인하세요.</p></div>` : ""}</section>
-  <section class="card"><div class="list-heading"><h3>04 · 스마트스토어 초안</h3><button id="generate">저장된 정보로 초안 만들기</button></div><p class="muted">기본 생성 버튼은 로컬 템플릿입니다. AI 제안은 위에서 요청하세요. 검색 노출 보장·공식 규칙 자동 판정은 하지 않습니다. 재생성은 기존 편집을 바꾸므로 아래 확인이 필요합니다.</p>${p.draft ? `<label class="check"><input type="checkbox" id="replace-draft">현재 편집 초안을 새 초안으로 교체합니다.</label><form id="draft-form"><label>상품명<input name="title" value="${e(p.draft.title)}"></label><label>상세 설명<textarea name="description" rows="7">${e(p.draft.description)}</textarea></label><label>상세 출력 순서<select name="layout-order"><option value="photos-first" ${p.draft.layout?.order !== "facts-first" ? "selected" : ""}>사진 먼저</option><option value="facts-first" ${p.draft.layout?.order === "facts-first" ? "selected" : ""}>정보 먼저</option></select></label><label>강조색<select name="layout-accent"><option value="forest" ${p.draft.layout?.accent !== "ink" ? "selected" : ""}>초록</option><option value="ink" ${p.draft.layout?.accent === "ink" ? "selected" : ""}>짙은 회색</option></select></label><button>초안 편집 저장</button></form><button id="render-preview">상세 PNG 미리보기</button>${detailPreview?.productId === p.id ? `<div class="rendered-preview">${detailPreview.urls.map((_, i) => `<img data-detail-index="${i}" alt="상세 출력 ${i + 1}페이지">`).join("")}</div>` : ""}<div class="preview"><span>미리보기 · 상품 v${p.draft.sourceVersion} / 초안 v${p.draft.version}</span><h4>${e(p.draft.title)}</h4>${p.assets.map((a) => `<img data-asset-id="${e(a.id)}">`).join("")}<p>${e(p.draft.description)}</p></div>` : '<p class="empty">상품명과 가격을 확인한 뒤 초안을 만드세요.</p>'}</section>
-  <section class="card"><h3>05 · 검수·승인·내보내기</h3>${issues.length ? `<ul class="issues">${issues.map((i) => `<li>${e(i)}</li>`).join("")}</ul>` : '<p class="good">초안의 기본 확인 항목을 충족했습니다. 공식 등록 필수값은 별도 확인하세요.</p>'}<form id="approval-form"><label>검수자<input name="reviewer" placeholder="검수자 이름 또는 별칭"></label><label class="check"><input name="reviewed" type="checkbox">사진의 색상·형태·구성, 문구의 사실, 옵션을 확인했습니다.</label><button ${issues.length ? 'disabled data-disabled="true"' : ""}>현재 버전 승인</button></form>${p.approval ? `<p class="good">${e(p.approval.reviewer)} 승인 · ${new Date(p.approval.at).toLocaleString("ko-KR")}</p>` : ""}<button id="zip" class="primary" ${!p.approval ? 'disabled data-disabled="true"' : ""}>사진·상세 이미지 ZIP 내보내기</button><button id="export" ${!p.approval ? 'disabled data-disabled="true"' : ""}>등록 준비 JSON 내보내기</button><p class="muted">문구와 원본 이미지(data URL)를 담은 JSON입니다. 판매자센터에 직접 업로드되는 형식이 아닙니다. ZIP에는 원본 파일, 860px 상세 PNG, 문구와 manifest가 포함됩니다. 사진은 잘라내거나 생성하지 않고 비율을 유지합니다.</p><p class="muted">공식 API create / update / status: 지원 안 함</p></section>`;
+  <section class="card" id="draft"><div class="list-heading"><h3>04 · 스마트스토어 초안</h3><button id="generate">저장된 정보로 초안 만들기</button></div><p class="muted">기본 생성 버튼은 로컬 템플릿입니다. AI 제안은 위에서 요청하세요. 검색 노출 보장·공식 규칙 자동 판정은 하지 않습니다. 재생성은 기존 편집을 바꾸므로 아래 확인이 필요합니다.</p>${p.draft ? `<label class="check"><input type="checkbox" id="replace-draft">현재 편집 초안을 새 초안으로 교체합니다.</label><form id="draft-form"><label>상품명<input name="title" value="${e(p.draft.title)}"></label><label>상세 설명<textarea name="description" rows="7">${e(p.draft.description)}</textarea></label><label>상세 출력 순서<select name="layout-order"><option value="photos-first" ${p.draft.layout?.order !== "facts-first" ? "selected" : ""}>사진 먼저</option><option value="facts-first" ${p.draft.layout?.order === "facts-first" ? "selected" : ""}>정보 먼저</option></select></label><label>강조색<select name="layout-accent"><option value="forest" ${p.draft.layout?.accent !== "ink" ? "selected" : ""}>초록</option><option value="ink" ${p.draft.layout?.accent === "ink" ? "selected" : ""}>짙은 회색</option></select></label><button>초안 편집 저장</button></form><button id="render-preview">상세 PNG 미리보기</button>${detailPreview?.productId === p.id ? `<div class="rendered-preview">${detailPreview.urls.map((_, i) => `<img data-detail-index="${i}" alt="상세 출력 ${i + 1}페이지">`).join("")}</div>` : ""}<div class="preview"><span>미리보기 · 상품 v${p.draft.sourceVersion} / 초안 v${p.draft.version}</span><h4>${e(p.draft.title)}</h4>${p.assets.map((a) => `<img data-asset-id="${e(a.id)}">`).join("")}<p>${e(p.draft.description)}</p></div>` : '<p class="empty">상품명과 가격을 확인한 뒤 초안을 만드세요.</p>'}</section>
+  <section class="card" id="review"><span class="eyebrow">READY TO SHARE</span><h3>마지막 확인, 그리고 내보내기</h3>${issues.length ? `<ul class="issues">${issues.map((i) => `<li>${e(i)}</li>`).join("")}</ul>` : '<p class="good">초안의 기본 확인 항목을 충족했습니다. 공식 등록 필수값은 별도 확인하세요.</p>'}<form id="approval-form"><label>검수자<input name="reviewer" placeholder="검수자 이름 또는 별칭"></label><label class="check"><input name="reviewed" type="checkbox">사진의 색상·형태·구성, 문구의 사실, 옵션을 확인했습니다.</label><button ${issues.length ? 'disabled data-disabled="true"' : ""}>현재 버전 승인</button></form>${p.approval ? `<p class="good">${e(p.approval.reviewer)} 승인 · ${new Date(p.approval.at).toLocaleString("ko-KR")}</p>` : ""}<button id="zip" class="primary" ${!p.approval ? 'disabled data-disabled="true"' : ""}>사진·상세 이미지 ZIP 내보내기</button><button id="export" ${!p.approval ? 'disabled data-disabled="true"' : ""}>등록 준비 JSON 내보내기</button><p class="muted">문구와 원본 이미지(data URL)를 담은 JSON입니다. 판매자센터에 직접 업로드되는 형식이 아닙니다. ZIP에는 원본 파일, 860px 상세 PNG, 문구와 manifest가 포함됩니다. 사진은 잘라내거나 생성하지 않고 비율을 유지합니다.</p><p class="muted">공식 API create / update / status: 지원 안 함</p></section>`;
 }
 function bind() {
   document.querySelector<HTMLButtonElement>("#real-samples")!.onclick = () =>
@@ -297,7 +306,34 @@ function bind() {
       });
   document.querySelector<HTMLButtonElement>("#new")!.onclick = () => {
     void act(async () => {
-      await commit(newProduct(), "새 상품을 추가했습니다.");
+      const empty = products.find(
+        (item) =>
+          !item.assets.length &&
+          !item.draft &&
+          !item.agentProposal &&
+          !item.options.trim() &&
+          !item.skus?.length &&
+          !item.channelRights &&
+          !item.rightsNote.trim() &&
+          !item.rightsExpiresOn &&
+          item.facts.every(
+            (fact) =>
+              !fact.value.trim() && !fact.source.trim() && !fact.confirmed,
+          ),
+      );
+      if (empty) {
+        selected = empty.id;
+        filter = "all";
+        message =
+          "작성 중인 빈 상품을 열었습니다. 사진이나 상품 정보를 추가하세요.";
+        render();
+        return;
+      }
+      filter = "all";
+      await commit(
+        newProduct(),
+        "새 상품을 추가했습니다. 사진이나 상품 정보를 입력하세요.",
+      );
     });
   };
   document.querySelector<HTMLButtonElement>("#sample")!.onclick = () =>
