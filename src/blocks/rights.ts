@@ -5,9 +5,10 @@ export function rightsIssues(p: Product): string[] {
     ...(p.rightsExpiresOn && koreaDay() > p.rightsExpiresOn
       ? ["사용 권한의 확인 기간이 만료되었습니다 (한국 날짜 기준)."]
       : []),
-    ...(!p.channelRights || !p.rightsNote.trim()
+    ...(!p.channelRights
       ? ["스마트스토어 판매·자료 사용 범위 확인이 필요합니다."]
       : []),
+    ...(!p.rightsNote.trim() ? ["권리 검토 메모·증빙 위치를 입력하세요."] : []),
     ...(!p.assets.length ? ["직접 검토할 상품 사진이 필요합니다."] : []),
     ...p.assets
       .filter((a) => !a.rightsConfirmed || !a.source.trim())

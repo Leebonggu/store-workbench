@@ -1040,3 +1040,284 @@ footer {
     transition: none !important;
   }
 }
+
+.guide-link {
+  color: #496b39;
+  font-size: 12px;
+  text-underline-offset: 4px;
+  margin-right: 12px;
+}
+.workspace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.danger-quiet {
+  color: #97604d;
+  border-color: #e9dfd8;
+  background: transparent;
+  font-size: 11px;
+  min-height: 32px;
+  padding: 5px 10px;
+}
+#review {
+  overflow-wrap: anywhere;
+}
+#review button {
+  max-width: 100%;
+  white-space: normal;
+}
+#review .check {
+  align-items: flex-start;
+}
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+.export-actions button {
+  flex: 1 1 220px;
+  min-width: 0;
+  padding: 13px 12px;
+}
+.export-help {
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+  padding-top: 10px;
+  color: #73806b;
+  font-size: 12px;
+  line-height: 1.9;
+}
+.export-help p {
+  margin: 10px 0;
+}
+.export-help strong {
+  color: #4c6341;
+}
+.review-blockers {
+  padding: 16px;
+  border: 1px solid #eee3cc;
+  background: #fcf8ef;
+  border-radius: 10px;
+  margin: 16px 0 24px;
+}
+.review-blockers > strong {
+  font-size: 12px;
+  color: #8c6e41;
+}
+.review-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  font-size: 11px;
+  color: #7a754d;
+}
+@media (max-width: 700px) {
+  .header-note {
+    font-size: 0;
+    gap: 0;
+  }
+  .guide-link {
+    margin: 0;
+  }
+  .workspace-actions {
+    flex-direction: column;
+    gap: 5px;
+    align-items: flex-end;
+  }
+  .workspace-actions .badge {
+    font-size: 9px;
+  }
+  .export-actions {
+    flex-direction: column;
+  }
+  .export-actions button {
+    flex: auto;
+    width: 100%;
+  }
+}
+
+/* Shared content rules also cover long filenames, AI output and narrow windows. */
+.card,
+.ai-panel,
+.workspace-heading,
+.preview,
+.backup-bar {
+  overflow-wrap: anywhere;
+}
+.card > *,
+.ai-panel > *,
+.workspace-heading > * {
+  min-width: 0;
+}
+.card > button,
+.card form > button,
+.ai-panel button {
+  max-width: 100%;
+  white-space: normal;
+}
+.check {
+  font-size: 13px;
+}
+.muted {
+  color: #6d7867;
+}
+.header-note {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+#guide-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  min-height: 36px;
+  padding: 6px 10px;
+  background: #fff;
+  white-space: nowrap;
+}
+#guide-toggle b {
+  font-size: 10px;
+  min-width: 20px;
+}
+#guide-toggle[aria-pressed="true"] {
+  border-color: #9aae7b;
+  background: #edf3e1;
+}
+.toggle-track {
+  display: inline-flex;
+  width: 26px;
+  height: 15px;
+  border-radius: 20px;
+  background: #cdd4c5;
+  padding: 2px;
+}
+.toggle-track::after {
+  content: "";
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px #0002;
+}
+[aria-pressed="true"] .toggle-track {
+  background: #67834a;
+  justify-content: flex-end;
+}
+.guide-now {
+  padding: 22px 24px;
+  background: #f5eedc;
+  border: 1px solid #e7d9b9;
+  border-radius: 14px;
+  margin-bottom: 24px;
+  overflow-wrap: anywhere;
+}
+.guide-now small {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #927946;
+}
+.guide-now h3 {
+  font-size: 19px;
+  color: #6c5835;
+  margin: 8px 0;
+}
+.guide-now p {
+  font-size: 13px;
+  color: #83704d;
+  line-height: 1.85;
+}
+.guide-now a {
+  display: inline-block;
+  font-size: 12px;
+  color: #7a663a;
+  margin-top: 8px;
+  text-underline-offset: 4px;
+}
+.guide-hint {
+  padding: 14px 17px;
+  margin: 12px 0 20px;
+  background: #faf6ec;
+  border-left: 3px solid #ccb985;
+  border-radius: 0 8px 8px 0;
+}
+.guide-hint strong {
+  font-size: 12px;
+  color: #846f44;
+}
+.guide-hint p {
+  font-size: 12px;
+  color: #8a7955;
+  line-height: 1.8;
+  margin: 5px 0 0;
+}
+@media (max-width: 700px) {
+  header {
+    height: auto;
+    min-height: 76px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+  .header-note {
+    gap: 10px;
+  }
+  .header-note .guide-link {
+    font-size: 11px;
+  }
+  .header-note .badge {
+    display: none;
+  }
+  .guide-now {
+    padding: 19px 17px;
+  }
+  .guide-now h3 {
+    font-size: 17px;
+  }
+  .fact-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fact-source {
+    grid-column: 1;
+    grid-row: 3;
+    margin-top: 10px;
+    font-size: 11px;
+  }
+  .fact-confirm {
+    grid-column: 1;
+    grid-row: 4;
+    font-size: 12px;
+  }
+  .fact-row > input {
+    font-size: 14px !important;
+  }
+  .fact-row input {
+    padding: 11px !important;
+  }
+  .fact-confirm input {
+    padding: 0 !important;
+  }
+}
+.guide-current {
+  outline: 2px solid #c5b27b;
+  outline-offset: 4px;
+}
+.form-feedback {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #eef3e5;
+  color: #61754b;
+  font-size: 12px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+  margin: 14px 0 0;
+}
+/* The guide banner replaces the compact next-step note while guidance is on. */
+.guide-now ~ .next {
+  display: none;
+}
