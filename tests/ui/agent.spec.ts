@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("morebijou:editor-mode", "advanced"),
+  );
+});
 test("three real products: images, facts, AI review, persistence, stale rejection and PNG", async ({
   page,
 }) => {

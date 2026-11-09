@@ -1321,3 +1321,197 @@ footer {
 .guide-now ~ .next {
   display: none;
 }
+
+/* Default: one decision at a time. Full editing remains available separately. */
+.simple-mode #guide-toggle,
+.simple-mode .local-note,
+.simple-mode footer,
+.simple-mode .backup-bar,
+.simple-mode aside > .muted,
+.simple-mode #sample {
+  display: none;
+}
+.simple-mode .intro {
+  padding-bottom: 22px;
+}
+.simple-mode .workspace {
+  max-width: 880px;
+}
+.quick-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.quick-steps {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.quick-steps button {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  border: 0;
+  background: #eaf0e3;
+  color: #75816b;
+  font-size: 14px;
+}
+.quick-steps button[aria-current="step"] {
+  background: #315f46;
+  color: white;
+}
+.quick-card {
+  padding: 36px;
+}
+.quick-card > h2 {
+  font-size: 27px;
+  margin-bottom: 8px;
+}
+.quick-card > p {
+  color: #75816b;
+  font-size: 14px;
+  margin-bottom: 26px;
+}
+.quick-card label {
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+.quick-card input:not([type="checkbox"]),
+.quick-card select,
+.quick-card textarea {
+  font-size: 15px;
+  padding: 13px;
+}
+.quick-card .primary {
+  font-size: 15px;
+  padding: 14px 22px;
+  margin-top: 14px;
+}
+.quick-card details {
+  margin-bottom: 24px;
+}
+.quick-card summary {
+  font-size: 13px;
+}
+.quick-card .check {
+  font-size: 12px;
+  color: #637258;
+}
+.quick-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.quick-photos {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 20px 0 28px;
+}
+.quick-photos img {
+  width: 100px;
+  height: 110px;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+.upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  border: 2px dashed #bac9a9;
+  background: #f4f7ed;
+  padding: 28px 20px;
+  border-radius: 16px;
+  cursor: pointer;
+  text-align: center;
+}
+.upload-area strong {
+  font-size: 19px;
+  color: #4e6b3e;
+}
+.upload-area > span {
+  font-size: 12px;
+  color: #80926c;
+}
+.upload-area .upload-symbol {
+  font-size: 36px;
+  line-height: 1;
+  color: #6f8957;
+}
+.upload-area input[type="file"] {
+  max-width: 340px;
+}
+.quick-result {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  background: #fafbf6;
+  margin-bottom: 24px;
+  overflow-wrap: anywhere;
+}
+.quick-result > p {
+  white-space: pre-wrap;
+  line-height: 1.9;
+}
+.quick-result .rendered-preview {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+.quick-result .rendered-preview img {
+  width: 420px;
+}
+.quick-next {
+  display: block;
+}
+.quick-questions p {
+  line-height: 1.9;
+  font-size: 13px;
+}
+#quick-finish {
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+@media (max-width: 700px) {
+  .quick-card {
+    padding: 24px 18px;
+  }
+  .quick-card > h2 {
+    font-size: 23px;
+  }
+  .quick-fields {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .quick-steps {
+    gap: 6px;
+  }
+  .quick-steps button {
+    font-size: 12px;
+    padding: 10px 5px;
+    gap: 6px;
+  }
+  .quick-card .primary {
+    width: 100%;
+  }
+  .quick-result {
+    padding: 12px;
+  }
+  .simple-mode .header-note {
+    gap: 10px;
+  }
+  .simple-mode .intro h1 {
+    font-size: 23px;
+  }
+}
+.quick-result .rendered-preview img {
+  max-width: 100%;
+}

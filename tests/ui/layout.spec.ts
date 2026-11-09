@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("morebijou:editor-mode", "advanced"),
+  );
+});
 test("new product reuses an untouched draft and preserves saved products", async ({
   page,
 }) => {

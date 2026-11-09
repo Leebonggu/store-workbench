@@ -9,6 +9,11 @@ async function bytes(download: Download) {
   for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
   return Buffer.concat(chunks);
 }
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("morebijou:editor-mode", "advanced"),
+  );
+});
 test("usable workflow uploads JPEG, maps SKU, edits layout, opens actual ZIP and restores a private backup", async ({
   page,
 }) => {

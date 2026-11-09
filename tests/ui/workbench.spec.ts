@@ -3,6 +3,11 @@ const png = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==",
   "base64",
 );
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("morebijou:editor-mode", "advanced"),
+  );
+});
 test("seller completes local workflow, reloads, exports, and edits invalidate approval", async ({
   page,
 }) => {

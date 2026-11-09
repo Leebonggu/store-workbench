@@ -1,3 +1,4 @@
+import { quickEditor } from "./quick-editor";
 import { showGuide } from "./ui-guide";
 import { requestProposal } from "./agent-client";
 import { loadRealSamples } from "./samples";
@@ -43,6 +44,13 @@ let busy = false;
 let feedbackForm: string | undefined;
 let dirty: string | undefined;
 let filter = "all";
+let simpleMode = true;
+const quickSteps = new Map<string, number>();
+try {
+  simpleMode = localStorage.getItem("morebijou:editor-mode") !== "advanced";
+} catch {
+  /* optional preference */
+}
 let guideEnabled = false;
 try {
   guideEnabled = localStorage.getItem("morebijou:guide-mode") === "on";
@@ -67,6 +75,11 @@ function name(p: Product) {
   return p.facts.find((f) => f.key === "name")?.value || "이름 없는 신상품";
 }
 function status(p: Product) {
+  if (simpleMode) {
+    if (p.approval) return "완료";
+    if (p.draft?.sourceVersion === p.version) return "결과 확인";
+    return p.assets.length ? "정보 입력 중" : "사진 기다리는 중";
+  }
   if (p.exported) return "내보냄 · 게시 아님";
   if (p.approval) return "승인 완료";
   if (!p.assets.length) return "사진 필요";
@@ -195,12 +208,12 @@ function render() {
   const list = products.filter(
     (x) => filter === "all" || (filter === "hold" ? !x.approval : !!x.approval),
   );
-  app.innerHTML = `<header><a class="brand" href="#"><span class="brand-mark">m<span>✳</span></span><span class="brand-name">morebijou<small>모어비쥬 상품 작업실</small></span></a><div class="header-note"><button id="guide-toggle" type="button" aria-pressed="false" aria-label="가이드 모드"></button><a class="guide-link" href="/guide.html" target="_blank" rel="noopener">사용 가이드 ↗</a><span class="status-dot"></span> 나만의 상품 작업실 <span class="badge">내 기기에 저장</span></div></header>
-  <div class="intro"><div><small>작은 반짝임을, 더 많은 사람에게</small><h1>오늘은 어떤 상품을 소개할까요?</h1><p>사진 한 장에서 시작하는 우리 가게 상세페이지.</p></div><button id="new" class="primary">+ 새 상품</button></div>
+  app.innerHTML = `<header><a class="brand" href="#"><span class="brand-mark">m<span>✳</span></span><span class="brand-name">morebijou<small>모어비쥬 상품 작업실</small></span></a><div class="header-note"><button id="editor-mode">${simpleMode ? "전체 편집" : "간단하게 만들기"}</button><button id="guide-toggle" type="button" aria-pressed="false" aria-label="가이드 모드"></button><a class="guide-link" href="/guide.html" target="_blank" rel="noopener">사용 가이드 ↗</a><span class="status-dot"></span> 나만의 상품 작업실 <span class="badge">내 기기에 저장</span></div></header>
+  <div class="intro"><div><small>작은 반짝임을, 더 많은 사람에게</small><h1>${simpleMode ? "사진을 올리면, 상품 소개가 완성돼요" : "오늘은 어떤 상품을 소개할까요?"}</h1><p>${simpleMode ? "사진으로 알 수 없는 것만 답해 주세요. 나머지는 AI가 작성해요." : "사진 한 장에서 시작하는 우리 가게 상세페이지."}</p></div><button id="new" class="primary">${simpleMode ? "새 사진으로 만들기" : "+ 새 상품"}</button></div>
   <div id="notice" role="status" aria-live="polite">${e(message)}</div>
   <main><aside><div class="list-heading"><h2>내 상품 <span>${products.length}</span></h2><span class="eyebrow">COLLECTION</span></div><div class="sample-actions"><button id="real-samples">모어비쥬 3종 불러오기</button><button id="sample" class="quiet">예시 추가</button></div><label>보기<select id="filter"><option value="all" ${filter === "all" ? "selected" : ""}>모든 상품</option><option value="hold" ${filter === "hold" ? "selected" : ""}>확인·작업 필요</option><option value="ready" ${filter === "ready" ? "selected" : ""}>승인 완료</option></select></label>
   <div class="products">${list.length ? list.map((x) => `<button class="product ${x.id === selected ? "active" : ""}" data-product="${e(x.id)}"><span class="product-thumb">${x.assets[0] ? `<img data-product-image="${e(x.id)}" alt="">` : "✳"}</span><span class="product-info"><strong>${e(name(x))}</strong><span class="product-status">${status(x)}</span><small>${new Date(x.updatedAt).toLocaleDateString("ko-KR")}</small></span></button>`).join("") : '<p class="empty">아직 상품이 없습니다.<br>새 상품이나 합성 예시를 추가해 보세요.</p>'}</div><p class="muted">실제 게시 여부는 이 초안에서 조회하지 않습니다.</p></aside>
-  <section class="workspace">${p ? editor(p) : '<div class="welcome"><span class="welcome-art">✳</span><small>HELLO, LITTLE THINGS</small><h2>사진 한 장, 소개의 시작</h2><p>위의 <b>+ 새 상품</b>을 눌러 첫 상품을 준비하세요.<br>기존 모어비쥬 3종으로 먼저 살펴봐도 좋아요.</p><div class="welcome-steps"><span>01 사진 올리기</span><span>02 소개 만들기</span><span>03 검수하고 내보내기</span></div></div>'}</section></main>
+  <section class="workspace">${p ? (simpleMode ? quickEditor(p, quickSteps.get(p.id) ?? (p.draft?.sourceVersion === p.version ? 3 : p.assets.length ? 2 : 1), detailPreview?.productId === p.id ? detailPreview.urls.length : 0) : editor(p)) : '<div class="welcome"><span class="welcome-art">✳</span><small>HELLO, LITTLE THINGS</small><h2>사진 한 장, 소개의 시작</h2><p>아래 <b>사진 올리고 시작하기</b>를 눌러 주세요.<br>기존 모어비쥬 3종으로 먼저 살펴봐도 좋아요.</p><button id="quick-start" class="primary">사진 올리고 시작하기 →</button><div class="welcome-steps"><span>01 사진 올리기</span><span>02 소개 만들기</span><span>03 결과 확인·저장</span></div></div>'}</section></main>
   <section class="backup-bar"><button id="backup">비공개 전체 백업</button><span>백업에는 내부 출처·권리 메모가 포함됩니다. 공개용 ZIP과 구분해서 보관하세요.</span>
     <details id="backup-tools" ${recoveryMode ? "open" : ""}><summary>백업 복원 도구</summary><form id="restore-form"><label>비공개 백업 불러오기 (100MiB 이하)<input type="file" name="backup" accept="application/json,.json"></label><label class="check"><input name="restore-confirm" type="checkbox">기존 상품은 보존하고 백업을 새 복사본으로 추가합니다. 이전 승인은 다시 확인합니다.</label><button data-recovery="true">백업 복원</button></form></details>
     ${recoveryMode ? '<button id="raw-backup" data-recovery="true">손상 원본 복구 파일 저장</button><p>복구 시 원본 저장 문자열을 IndexedDB의 별도 복구 키에도 보관합니다.</p>' : ""}</section><div class="local-note">이 브라우저의 IndexedDB에 저장됩니다. Flue + OpenRouter 선택 연결 · 판매처 자동 등록 없음 · 내보내기는 공식 업로드 양식이 아닙니다. 기기 간 자동 동기화는 지원하지 않습니다. 백업으로 이동할 수 있습니다.</div>
@@ -247,9 +260,17 @@ function render() {
       if (asset && parseImageDataUrl(asset.dataUrl, asset.mime))
         img.src = asset.dataUrl;
     });
-  showGuide(guideEnabled, p);
+  showGuide(!simpleMode && guideEnabled, p);
+  app.classList.toggle("simple-mode", simpleMode);
   bind();
   showMessage();
+  if (
+    simpleMode &&
+    p?.draft?.sourceVersion === p?.version &&
+    p?.draft &&
+    detailPreview?.productId !== p.id
+  )
+    void quickPreview(p, true);
   if (p)
     void captureGuide.run({ product: p }).then((result) => {
       const target = document.querySelector("#capture-guide");
@@ -276,7 +297,66 @@ function editor(p: Product) {
   <section class="card" id="draft"><div class="list-heading"><h3>04 · 스마트스토어 초안</h3><button id="generate">저장된 정보로 초안 만들기</button></div><p class="muted">기본 생성 버튼은 로컬 템플릿입니다. AI 제안은 위에서 요청하세요. 검색 노출 보장·공식 규칙 자동 판정은 하지 않습니다. 재생성은 기존 편집을 바꾸므로 아래 확인이 필요합니다.</p>${p.draft ? `<label class="check"><input type="checkbox" id="replace-draft">현재 편집 초안을 새 초안으로 교체합니다.</label><form id="draft-form"><label>상품명<input name="title" value="${e(p.draft.title)}"></label><label>상세 설명<textarea name="description" rows="7">${e(p.draft.description)}</textarea></label><label>상세 출력 순서<select name="layout-order"><option value="photos-first" ${p.draft.layout?.order !== "facts-first" ? "selected" : ""}>사진 먼저</option><option value="facts-first" ${p.draft.layout?.order === "facts-first" ? "selected" : ""}>정보 먼저</option></select></label><label>강조색<select name="layout-accent"><option value="forest" ${p.draft.layout?.accent !== "ink" ? "selected" : ""}>초록</option><option value="ink" ${p.draft.layout?.accent === "ink" ? "selected" : ""}>짙은 회색</option></select></label><button>초안 편집 저장</button></form><button id="render-preview">상세 PNG 미리보기</button>${detailPreview?.productId === p.id ? `<div class="rendered-preview">${detailPreview.urls.map((_, i) => `<img data-detail-index="${i}" alt="상세 출력 ${i + 1}페이지">`).join("")}</div>` : ""}<div class="preview"><span>미리보기 · 상품 v${p.draft.sourceVersion} / 초안 v${p.draft.version}</span><h4>${e(p.draft.title)}</h4>${p.assets.map((a) => `<img data-asset-id="${e(a.id)}">`).join("")}<p>${e(p.draft.description)}</p></div>` : '<p class="empty">상품명과 가격을 확인한 뒤 초안을 만드세요.</p>'}</section>
   <section class="card" id="review"><span class="eyebrow">READY TO SHARE</span><h3>마지막 확인, 그리고 내보내기</h3>${issues.length ? `<div class="review-blockers"><strong>내보내기 전에 확인해 주세요</strong><ul class="issues">${issues.map((i) => `<li>${e(i)}</li>`).join("")}</ul><div class="review-links"><a href="#rights">사진·판매 권한 확인 →</a><a href="#draft">초안 준비 →</a></div></div>` : '<p class="good">초안의 기본 확인 항목을 충족했습니다. 공식 등록 필수값은 별도 확인하세요.</p>'}<form id="approval-form"><label>검수자<input name="reviewer" placeholder="검수자 이름 또는 별칭"></label><label class="check"><input name="reviewed" type="checkbox">사진의 색상·형태·구성, 문구의 사실, 옵션을 확인했습니다.</label><button ${issues.length ? 'disabled data-disabled="true"' : ""}>현재 버전 승인</button></form>${p.approval ? `<p class="good">${e(p.approval.reviewer)} 승인 · ${new Date(p.approval.at).toLocaleString("ko-KR")}</p>` : ""}<div class="export-actions"><button id="zip" class="primary" ${!p.approval ? 'disabled data-disabled="true"' : ""}>사진·상세 이미지 ZIP 내보내기</button><button id="export" ${!p.approval ? 'disabled data-disabled="true"' : ""}>등록 준비 JSON 내보내기</button></div><div class="export-help"><p><strong>ZIP</strong> 원본 사진·상세 이미지·상품 문구를 내려받습니다. 판매자센터에서 직접 등록할 때 사용하세요.</p><p><strong>JSON</strong> 상품 정보와 사진 데이터를 담은 등록 준비 자료입니다. 판매자센터에 바로 업로드하는 파일은 아닙니다.</p><p>스마트스토어 자동 등록은 지원하지 않습니다. <a href="/guide.html#publish" target="_blank" rel="noopener">내보내기 가이드 ↗</a></p></div></section>`;
 }
+function focusQuickStep() {
+  document.querySelector(".workspace")?.scrollIntoView({ block: "start" });
+  const heading = document.querySelector<HTMLElement>(".quick-card h2");
+  if (heading) {
+    heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
+  }
+}
+async function quickPreview(product: Product, background = false) {
+  if (background && (dirty || busy)) return;
+  try {
+    const pages = await renderDetail(product);
+    if (
+      (background && (dirty || busy)) ||
+      current() !== product ||
+      storageBlocked ||
+      (await database.getItem(STORAGE_KEY)) !== storageSnapshot
+    )
+      return;
+    clearPreview();
+    detailPreview = {
+      productId: product.id,
+      urls: pages.map((page) =>
+        URL.createObjectURL(
+          new Blob([new Uint8Array(page.bytes)], { type: "image/png" }),
+        ),
+      ),
+    };
+    render();
+  } catch {
+    message =
+      "문구는 저장했지만 이미지 미리보기를 만들지 못했어요. 다시 시도해 주세요.";
+    showMessage();
+  }
+}
 function bind() {
+  document.querySelector<HTMLButtonElement>("#editor-mode")!.onclick = () => {
+    if (!allowed()) return;
+    simpleMode = !simpleMode;
+    try {
+      localStorage.setItem(
+        "morebijou:editor-mode",
+        simpleMode ? "simple" : "advanced",
+      );
+    } catch {
+      /* optional preference */
+    }
+    render();
+  };
+  document.querySelectorAll<HTMLButtonElement>("[data-quick-step]").forEach(
+    (button) =>
+      (button.onclick = () => {
+        if (!allowed() || !current()) return;
+        quickSteps.set(current()!.id, Number(button.dataset.quickStep));
+        render();
+        document
+          .querySelector(".workspace")
+          ?.scrollIntoView({ block: "start" });
+      }),
+  );
   document.querySelector<HTMLButtonElement>("#guide-toggle")!.onclick = () => {
     guideEnabled = !guideEnabled;
     try {
@@ -407,6 +487,10 @@ function bind() {
         "합성 예시입니다. 실상품 정보가 아니며 사진·권리·사실 확인이 필요합니다.",
       );
     });
+  const quickStart = document.querySelector<HTMLButtonElement>("#quick-start");
+  if (quickStart)
+    quickStart.onclick = () =>
+      document.querySelector<HTMLButtonElement>("#new")!.click();
   document.querySelectorAll<HTMLButtonElement>("[data-product]").forEach(
     (b) =>
       (b.onclick = () => {
@@ -505,6 +589,184 @@ function bind() {
         void act(() => fn(new FormData(f), current()!), id);
       };
   };
+  form("quick-upload", async (data, p) => {
+    const file = data.get("file") as File;
+    if (!file?.size || file.size > 2 * 1024 * 1024) {
+      message = "2MB 이하 사진을 골라 주세요.";
+      showMessage();
+      return;
+    }
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const result = await manageAsset.run({
+      product: p,
+      name: file.name,
+      dataUrl,
+      source: String(data.get("source") ?? ""),
+    });
+    if (!result.ok) {
+      message = result.error.message;
+      showMessage();
+      return;
+    }
+    quickSteps.set(p.id, 2);
+    if (
+      await commit(
+        revise(p, { assets: [...p.assets, result.value] }),
+        "사진을 올렸어요. 상품에 대해 조금만 알려 주세요.",
+      )
+    )
+      focusQuickStep();
+  });
+  form("quick-facts", async (data, p) => {
+    if (
+      !data.has("facts-confirmed") ||
+      !data.has("rights-confirmed") ||
+      !data.has("consent")
+    ) {
+      message = "정보 확인·사용 권한·AI 전송 안내를 확인해 주세요.";
+      showMessage();
+      return;
+    }
+    if (!p.assets.length) {
+      message = "사진을 먼저 올려 주세요.";
+      showMessage();
+      return;
+    }
+    const facts: Fact[] = p.facts.map((f) => {
+      const value = String(data.get(f.key) ?? "").trim();
+      return {
+        ...f,
+        value,
+        source: value
+          ? f.value === value && f.source
+            ? f.source
+            : "판매자 직접 입력·확인"
+          : "",
+        confirmed: !!value,
+      };
+    });
+    const checked = await confirmFacts.run({ product: p, facts });
+    if (!checked.ok) {
+      message = checked.error.message;
+      showMessage();
+      return;
+    }
+    const next = revise(p, {
+      facts: checked.value,
+      options: [
+        data.get("unit") !== "미확인"
+          ? `판매 단위: ${String(data.get("unit") ?? "")}`
+          : "",
+        data.get("selection") !== "미확인"
+          ? `디자인 선택: ${String(data.get("selection") ?? "")}`
+          : "",
+        String(data.get("options") ?? ""),
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      assets: p.assets.map((a) => ({ ...a, rightsConfirmed: true })),
+      channelRights: true,
+      rightsNote:
+        p.rightsNote.trim() ||
+        "판매자가 간단 만들기 화면에서 사진·상품 자료의 온라인 판매 사용 권한을 직접 확인함.",
+    });
+    if (
+      !(await commit(
+        next,
+        "정보를 저장했어요. AI가 상세페이지를 만들고 있어요.",
+      ))
+    )
+      return;
+    operationSnapshot = storageSnapshot;
+    operationState = JSON.stringify(products);
+    document
+      .querySelectorAll<
+        | HTMLInputElement
+        | HTMLButtonElement
+        | HTMLTextAreaElement
+        | HTMLSelectElement
+      >("input, button, textarea, select")
+      .forEach((field) => (field.disabled = true));
+    message =
+      "AI가 사진과 정보를 읽고 상세페이지를 만들고 있어요. 잠시만 기다려 주세요.";
+    showMessage();
+    try {
+      const proposal = await requestProposal(
+        next,
+        "짧고 귀여운 한국어 상세페이지를 만들어 주세요. 알려진 판매 조건을 정확히 지키고 모르는 정보는 질문으로만 남겨 주세요.",
+      );
+      const generated: Product = {
+        ...next,
+        agentProposal: proposal,
+        draft: {
+          channel: "smartstore",
+          sourceVersion: next.version,
+          rulesVersion: "manual-v1",
+          generator: "flue-openrouter",
+          version: (next.draft?.version ?? 0) + 1,
+          title: proposal.title,
+          description: proposal.description,
+          assetIds: next.assets.map((a) => a.id),
+          layout: next.draft?.layout ?? {
+            order: "photos-first",
+            accent: "forest",
+          },
+        },
+        approval: undefined,
+        exported: undefined,
+      };
+      quickSteps.set(p.id, 3);
+      if (
+        await commit(
+          generated,
+          "상세페이지가 완성됐어요. 내용을 확인해 주세요.",
+        )
+      ) {
+        await quickPreview(generated);
+        focusQuickStep();
+      }
+    } catch (error) {
+      message =
+        error instanceof Error
+          ? error.message
+          : "생성하지 못했어요. 입력한 정보는 저장되어 있습니다.";
+      render();
+    }
+  });
+  form("quick-edit", async (data, p) => {
+    const next = editDraft(
+      p,
+      String(data.get("title")),
+      String(data.get("description")),
+    );
+    if (await commit(next, "수정 내용을 저장했어요.")) await quickPreview(next);
+  });
+  form("quick-finish", async (data, p) => {
+    const result = await approve.run({
+      product: p,
+      expectedVersion: p.version,
+      reviewer: "판매자 직접 검수",
+      visualReviewed: data.has("reviewed"),
+    });
+    if (!result.ok) {
+      message = result.error.message;
+      showMessage();
+      return;
+    }
+    const next = { ...p, approval: result.value };
+    if (
+      await commit(
+        next,
+        "확인 완료! 상세페이지를 작업실에 저장했어요. 필요하면 파일로 내려받으세요.",
+      )
+    )
+      await quickPreview(next);
+  });
   form("ai-form", async (data, p) => {
     if (!data.has("consent")) {
       message = "사진·정보 전송과 비용 안내를 확인해 주세요.";

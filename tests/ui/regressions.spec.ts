@@ -14,6 +14,11 @@ async function pauseDecode(page: Page) {
     };
   });
 }
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("morebijou:editor-mode", "advanced"),
+  );
+});
 test("delayed photo validation cannot overwrite another tab product", async ({
   page,
   context,
