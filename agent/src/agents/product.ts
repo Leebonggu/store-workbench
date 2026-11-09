@@ -33,6 +33,7 @@ export function ProductAgent() {
       output: {
         facts: source.facts.filter((f) => f.confirmed),
         options: source.options,
+        skus: source.skus ?? [],
         missing: source.facts
           .filter((f) => !f.confirmed || !f.value)
           .map((f) => f.key),
@@ -59,7 +60,13 @@ export function ProductAgent() {
         input.description +
         "\n\n[판매자 확인 정보]\n" +
         facts.map((f) => `${labels[f.key] || f.key}: ${f.value}`).join("\n") +
-        (source.options ? "\n\n[옵션·판매 안내]\n" + source.options : "");
+        (source.options ? "\n\n[옵션·판매 안내]\n" + source.options : "") +
+        (source.skus?.length
+          ? "\n\n[옵션별 가격]\n" +
+            source.skus
+              .map((s) => `${s.label}: ${s.price.toLocaleString("ko-KR")}원`)
+              .join("\n")
+          : "");
       publish({
         ...input,
         description,

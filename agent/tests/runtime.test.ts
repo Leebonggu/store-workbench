@@ -25,6 +25,7 @@ test("Flue HTTP request actually executes inspect and submit tools without paid 
       { key: "size", value: "", confirmed: false },
     ],
     options: "1개 기준 · 배송비 3,300원",
+    skus: [{ label: "펜던트 추가", price: 8000 }],
     images: [],
     instruction: "귀엽게",
   };
@@ -59,6 +60,7 @@ test("Flue HTTP request actually executes inspect and submit tools without paid 
     assert.equal(response.status, 200, JSON.stringify(value));
     assert.equal(value.sourceVersion, 1);
     assert.match(value.description, /배송비 3,300원/);
+    assert.match(value.description, /펜던트 추가: 8,000원/);
     assert.equal(value.questions[0], "크기를 알려주세요.");
     assert.equal(model.state.callCount, 2);
     const forbidden = await app.request("http://127.0.0.1:3583/api/propose", {

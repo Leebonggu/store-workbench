@@ -4,6 +4,7 @@ export type AgentInput = {
   sourceVersion: number;
   facts: { key: string; value: string; confirmed: boolean }[];
   options: string;
+  skus?: { label: string; price: number }[];
   images: { mimeType: string; data: string }[];
   instruction: string;
   previousDraft?: { title: string; description: string };
@@ -44,6 +45,7 @@ export function publicProduct(
     version: number;
     facts: AgentInput["facts"];
     options: string;
+    skus?: { label: string; price: number }[];
     assets: { mime: string; dataUrl: string }[];
     draft?: { title: string; description: string };
   },
@@ -58,6 +60,7 @@ export function publicProduct(
       confirmed,
     })),
     options: p.options,
+    skus: p.skus?.map(({ label, price }) => ({ label, price })),
     images: p.assets.map((a) => ({
       mimeType: a.mime,
       data: a.dataUrl.split(",")[1],

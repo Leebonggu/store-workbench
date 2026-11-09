@@ -19,6 +19,17 @@ const inputSchema = v.object({
     v.maxLength(5),
   ),
   options: v.pipe(v.string(), v.maxLength(5000)),
+  skus: v.optional(
+    v.pipe(
+      v.array(
+        v.object({
+          label: v.pipe(v.string(), v.maxLength(100)),
+          price: v.pipe(v.number(), v.integer(), v.minValue(1)),
+        }),
+      ),
+      v.maxLength(50),
+    ),
+  ),
   images: v.pipe(
     v.array(
       v.object({

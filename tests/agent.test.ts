@@ -11,11 +11,22 @@ test("AI request excludes private evidence and unconfirmed values", async () => 
     confirmed: false,
     source: "PRIVATE",
   };
+  p.skus = [
+    {
+      id: "sku",
+      label: "태극기 + 펜던트",
+      price: 8000,
+      assetId: p.assets[0].id,
+    },
+  ];
   const wire = JSON.stringify(publicProduct(p, "shorter"));
   assert.ok(!wire.includes("PRIVATE"));
   assert.ok(!wire.includes("UNCONFIRMED"));
   assert.ok(!wire.includes("sha256"));
   assert.equal(JSON.parse(wire).images.length, 1);
+  assert.deepEqual(JSON.parse(wire).skus, [
+    { label: "태극기 + 펜던트", price: 8000 },
+  ]);
 });
 test("AI output rejects malformed arrays and oversized copy", () => {
   const x = {
