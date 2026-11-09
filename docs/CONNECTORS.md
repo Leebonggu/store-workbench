@@ -1,3 +1,15 @@
+# v0.3 실제 연결 구성
+
+현재 AI 연결은 `agent/src/agents/product.ts`의 Flue 에이전트와 OpenRouter입니다. `src/blocks/providers.ts`는 이전 모의 후보 추출 계약이며 실연결 경로가 아닙니다.
+
+`POST /api/propose`: 공개 상품 정보·사진·수정 요청 → Flue `inspect_product` → `submit_proposal` → 검증된 제안. `GET /api/health`: 키 설정 여부와 모델명만 반환합니다. 키 값은 응답하지 않습니다.
+
+키는 루트 `.env`의 `OPENROUTER_API_KEY`, 모델은 `OPENROUTER_MODEL`. 실제 키 호출은 미검증입니다. 로컬 서버 전용으로 인증·인터넷 배포는 제공하지 않습니다. 공식 스마트스토어 API는 여전히 미연결입니다.
+
+아래는 v0.2 연결 준비 기록입니다.
+
+---
+
 # 외부 연동 준비와 경계
 
 현재 사용 흐름은 키 없이 로컬에서 완결됩니다. 공식 API를 호출하거나 인증 정보를 읽지 않습니다.

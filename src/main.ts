@@ -1,3 +1,5 @@
+import { requestProposal } from "./agent-client";
+import { loadRealSamples } from "./samples";
 import { createBackup, restoreBackup, BACKUP_LIMIT } from "./backup";
 import { renderDetail } from "./detail-renderer";
 import { packageZip } from "./blocks/package";
@@ -176,13 +178,13 @@ function render() {
   const list = products.filter(
     (x) => filter === "all" || (filter === "hold" ? !x.approval : !!x.approval),
   );
-  app.innerHTML = `<header><a class="brand" href="#">◧ 상품 작업대 <span>Store Workbench</span></a><span class="badge">로컬 작업대 v0.2</span></header>
+  app.innerHTML = `<header><a class="brand" href="#">◧ 상품 작업대 <span>Store Workbench</span></a><span class="badge">모어비쥬 작업대 v0.3</span></header>
   <div class="intro"><div><small>매장에서 온라인까지</small><h1>밀린 신상품, 하나씩 완성하기</h1><p>사진과 확인된 정보를 모아 일관된 등록 초안을 만드세요.</p></div><button id="new" class="primary">+ 새 상품</button></div>
   <div id="notice" role="status" aria-live="polite">${e(message)}</div>
   <section class="backup-bar"><button id="backup">비공개 전체 백업</button><span>백업에는 내부 출처·권리 메모가 포함됩니다. 공개용 ZIP과 구분해서 보관하세요.</span>
     <details id="backup-tools" ${recoveryMode ? "open" : ""}><summary>백업 복원 도구</summary><form id="restore-form"><label>비공개 백업 불러오기 (100MiB 이하)<input type="file" name="backup" accept="application/json,.json"></label><label class="check"><input name="restore-confirm" type="checkbox">기존 상품은 보존하고 백업을 새 복사본으로 추가합니다. 이전 승인은 다시 확인합니다.</label><button data-recovery="true">백업 복원</button></form></details>
-    ${recoveryMode ? '<button id="raw-backup" data-recovery="true">손상 원본 복구 파일 저장</button><p>복구 시 원본 저장 문자열을 IndexedDB의 별도 복구 키에도 보관합니다.</p>' : ""}</section><div class="local-note">이 브라우저의 IndexedDB에 저장됩니다. AI·판매처 API 연결 없음 · 내보내기는 공식 업로드 양식이 아닙니다. 기기 간 자동 동기화는 지원하지 않습니다. 백업으로 이동할 수 있습니다.</div>
-  <main><aside><div class="list-heading"><h2>작업 목록 <span>${products.length}</span></h2><button id="sample" class="quiet">예시 추가</button></div><label>보기<select id="filter"><option value="all" ${filter === "all" ? "selected" : ""}>모든 상품</option><option value="hold" ${filter === "hold" ? "selected" : ""}>확인·작업 필요</option><option value="ready" ${filter === "ready" ? "selected" : ""}>승인 완료</option></select></label>
+    ${recoveryMode ? '<button id="raw-backup" data-recovery="true">손상 원본 복구 파일 저장</button><p>복구 시 원본 저장 문자열을 IndexedDB의 별도 복구 키에도 보관합니다.</p>' : ""}</section><div class="local-note">이 브라우저의 IndexedDB에 저장됩니다. Flue + OpenRouter 선택 연결 · 판매처 자동 등록 없음 · 내보내기는 공식 업로드 양식이 아닙니다. 기기 간 자동 동기화는 지원하지 않습니다. 백업으로 이동할 수 있습니다.</div>
+  <main><aside><div class="list-heading"><h2>작업 목록 <span>${products.length}</span></h2><button id="sample" class="quiet">예시 추가</button><button id="real-samples" class="quiet">모어비쥬 3종 불러오기</button></div><label>보기<select id="filter"><option value="all" ${filter === "all" ? "selected" : ""}>모든 상품</option><option value="hold" ${filter === "hold" ? "selected" : ""}>확인·작업 필요</option><option value="ready" ${filter === "ready" ? "selected" : ""}>승인 완료</option></select></label>
   <div class="products">${list.length ? list.map((x) => `<button class="product ${x.id === selected ? "active" : ""}" data-product="${e(x.id)}"><strong>${e(name(x))}</strong><span>${status(x)}</span><small>v${x.version} · ${new Date(x.updatedAt).toLocaleString("ko-KR")}</small></button>`).join("") : '<p class="empty">아직 상품이 없습니다.<br>새 상품이나 합성 예시를 추가해 보세요.</p>'}</div><p class="muted">실제 게시 여부는 이 초안에서 조회하지 않습니다.</p></aside>
   <section class="workspace">${p ? editor(p) : '<div class="welcome"><span>01 → 02 → 03</span><h2>첫 상품을 준비해 보세요</h2><p>사진과 정보 확인부터 승인·내보내기까지.<br>새 상품은 모든 권한과 사실이 미확인 상태로 시작합니다.</p></div>'}</section></main>
   <footer>공통 상품 원장 → 기능 블록 → 스마트스토어용 초안 · 사진·옵션마다 고유한 특성을 보존합니다.</footer>`;
@@ -240,10 +242,59 @@ function editor(p: Product) {
   <details><summary>텍스트에서 미확인 후보 가져오기</summary><p class="muted">AI/OCR이 아닌 로컬 파서입니다. 기존 값이 있으면 덮어쓰지 않습니다.</p><form id="candidate-form"><label>후보 정보<textarea name="text" rows="3" placeholder="name:새 상품&#10;material:소재"></textarea></label><label>출처<input name="source" placeholder="자료 이름"></label><button>후보만 가져오기</button></form></details></section>
   <section class="card"><h3>옵션별 상품 (SKU)</h3><p class="muted">옵션이 있는 경우 이름·가격·사진을 연결하세요. 입력 재고는 현재 확인값이며 실시간 동기화하지 않습니다. 마지막 빈 행은 저장하지 않습니다.</p><form id="sku-form">${[...(p.skus ?? []), { id: "", label: "", price: 0, assetId: "" }].map((sku, i) => `<div class="sku-row" data-sku-row="${i}"><input type="hidden" name="sku-id-${i}" value="${e(sku.id)}"><label>옵션 이름<input name="sku-label-${i}" value="${e(sku.label)}"></label><label>가격<input name="sku-price-${i}" type="number" min="1" value="${sku.price || ""}"></label><label>입력 재고<input name="sku-stock-${i}" type="number" min="0" value="${"stock" in sku ? (sku.stock ?? "") : ""}"></label><label>사진<select name="sku-asset-${i}"><option value="">선택</option>${p.assets.map((a) => `<option value="${e(a.id)}" ${a.id === sku.assetId ? "selected" : ""}>${e(a.name)}</option>`).join("")}</select></label></div>`).join("")}<button>옵션 저장</button></form></section>
   <section class="card"><h3>03 · 권리·판매 범위</h3><form id="rights-form">${p.assets.map((a) => `<label class="check"><input type="checkbox" name="asset-${e(a.id)}" ${a.rightsConfirmed ? "checked" : ""}>${e(a.name)}의 온라인 사용 권한을 확인했습니다.</label>`).join("")}<label class="check"><input type="checkbox" name="channel" ${p.channelRights ? "checked" : ""}>상품과 자료의 스마트스토어 판매·사용 범위를 확인했습니다.</label><label>검토 메모·증빙 위치 (내부 기록, 패키지에서 제외)<textarea name="note" rows="2">${e(p.rightsNote)}</textarea></label><label>권리 확인 유효 기한 (선택 · 한국 날짜 기준 해당일까지)<input name="expires" type="date" value="${e(p.rightsExpiresOn ?? "")}"></label><p class="muted">사진 사용, 상품 관련 권리, 계약상 채널 제한을 각각 검토하세요. 법적 적합성 자동 판단은 하지 않습니다. 기한이 지나면 승인·내보내기를 막습니다. 증빙 파일 보관은 후속 범위입니다.</p><button>권리 확인 저장</button></form></section>
-  <section class="card"><div class="list-heading"><h3>04 · 스마트스토어 초안</h3><button id="generate">저장된 정보로 초안 만들기</button></div><p class="muted">결정적 로컬 템플릿 · AI 아님 · 검색량·상위 노출·공식 규칙 검증 없음. 재생성은 기존 편집을 바꾸므로 아래 확인이 필요합니다.</p>${p.draft ? `<label class="check"><input type="checkbox" id="replace-draft">현재 편집 초안을 새 초안으로 교체합니다.</label><form id="draft-form"><label>상품명<input name="title" value="${e(p.draft.title)}"></label><label>상세 설명<textarea name="description" rows="7">${e(p.draft.description)}</textarea></label><label>상세 출력 순서<select name="layout-order"><option value="photos-first" ${p.draft.layout?.order !== "facts-first" ? "selected" : ""}>사진 먼저</option><option value="facts-first" ${p.draft.layout?.order === "facts-first" ? "selected" : ""}>정보 먼저</option></select></label><label>강조색<select name="layout-accent"><option value="forest" ${p.draft.layout?.accent !== "ink" ? "selected" : ""}>초록</option><option value="ink" ${p.draft.layout?.accent === "ink" ? "selected" : ""}>짙은 회색</option></select></label><button>초안 편집 저장</button></form><button id="render-preview">상세 PNG 미리보기</button>${detailPreview?.productId === p.id ? `<div class="rendered-preview">${detailPreview.urls.map((_, i) => `<img data-detail-index="${i}" alt="상세 출력 ${i + 1}페이지">`).join("")}</div>` : ""}<div class="preview"><span>미리보기 · 상품 v${p.draft.sourceVersion} / 초안 v${p.draft.version}</span><h4>${e(p.draft.title)}</h4>${p.assets.map((a) => `<img data-asset-id="${e(a.id)}">`).join("")}<p>${e(p.draft.description)}</p></div>` : '<p class="empty">상품명과 가격을 확인한 뒤 초안을 만드세요.</p>'}</section>
+  <section class="ai-panel"><h3>AI와 상세페이지 만들기</h3><p>확인한 상품 정보와 사진으로 설명·FAQ·검색어를 제안합니다. 새로운 사실은 상품 정보에서 확인한 뒤 다시 요청하세요.</p>
+  <form id="ai-form"><label>원하는 설명·수정 방향<textarea name="instruction" placeholder="예: 짧고 귀엽게, 랜덤 발송 안내를 강조해줘"></textarea></label><label class="check"><input type="checkbox" name="consent">사진·확인 정보·현재 초안을 OpenRouter와 선택한 모델 제공자에 전송합니다. 호출 비용이 발생합니다.</label><button class="primary">AI 제안 받기</button></form>
+  ${p.agentProposal ? `<div class="ai-result"><h4>AI 제안 · 상품 v${p.agentProposal.sourceVersion}</h4><strong>${e(p.agentProposal.title)}</strong><p>${e(p.agentProposal.description)}</p><h4>확인할 질문</h4><p>${e(p.agentProposal.questions.join("\n") || "추가 질문 없음 · 최종 사실 검수 필요")}</p><h4>사진 관찰 후보 · 사실 확정 아님</h4><p>${e(p.agentProposal.observations.join("\n"))}</p><h4>관련 검색어 제안 · 검색량 미검증</h4><p>${e(p.agentProposal.keywords.join(", "))}</p><h4>등록 전 확인</h4><p>${e(p.agentProposal.checklist.join("\n"))}</p><button id="apply-ai">제안을 편집 초안으로 적용</button><p class="muted">기존 편집 초안이 교체되고 승인이 해제됩니다. 아래에서 수정·검수 후 승인하세요.</p></div>` : ""}</section>
+  <section class="card"><div class="list-heading"><h3>04 · 스마트스토어 초안</h3><button id="generate">저장된 정보로 초안 만들기</button></div><p class="muted">기본 생성 버튼은 로컬 템플릿입니다. AI 제안은 위에서 요청하세요. 검색 노출 보장·공식 규칙 자동 판정은 하지 않습니다. 재생성은 기존 편집을 바꾸므로 아래 확인이 필요합니다.</p>${p.draft ? `<label class="check"><input type="checkbox" id="replace-draft">현재 편집 초안을 새 초안으로 교체합니다.</label><form id="draft-form"><label>상품명<input name="title" value="${e(p.draft.title)}"></label><label>상세 설명<textarea name="description" rows="7">${e(p.draft.description)}</textarea></label><label>상세 출력 순서<select name="layout-order"><option value="photos-first" ${p.draft.layout?.order !== "facts-first" ? "selected" : ""}>사진 먼저</option><option value="facts-first" ${p.draft.layout?.order === "facts-first" ? "selected" : ""}>정보 먼저</option></select></label><label>강조색<select name="layout-accent"><option value="forest" ${p.draft.layout?.accent !== "ink" ? "selected" : ""}>초록</option><option value="ink" ${p.draft.layout?.accent === "ink" ? "selected" : ""}>짙은 회색</option></select></label><button>초안 편집 저장</button></form><button id="render-preview">상세 PNG 미리보기</button>${detailPreview?.productId === p.id ? `<div class="rendered-preview">${detailPreview.urls.map((_, i) => `<img data-detail-index="${i}" alt="상세 출력 ${i + 1}페이지">`).join("")}</div>` : ""}<div class="preview"><span>미리보기 · 상품 v${p.draft.sourceVersion} / 초안 v${p.draft.version}</span><h4>${e(p.draft.title)}</h4>${p.assets.map((a) => `<img data-asset-id="${e(a.id)}">`).join("")}<p>${e(p.draft.description)}</p></div>` : '<p class="empty">상품명과 가격을 확인한 뒤 초안을 만드세요.</p>'}</section>
   <section class="card"><h3>05 · 검수·승인·내보내기</h3>${issues.length ? `<ul class="issues">${issues.map((i) => `<li>${e(i)}</li>`).join("")}</ul>` : '<p class="good">초안의 기본 확인 항목을 충족했습니다. 공식 등록 필수값은 별도 확인하세요.</p>'}<form id="approval-form"><label>검수자<input name="reviewer" placeholder="검수자 이름 또는 별칭"></label><label class="check"><input name="reviewed" type="checkbox">사진의 색상·형태·구성, 문구의 사실, 옵션을 확인했습니다.</label><button ${issues.length ? 'disabled data-disabled="true"' : ""}>현재 버전 승인</button></form>${p.approval ? `<p class="good">${e(p.approval.reviewer)} 승인 · ${new Date(p.approval.at).toLocaleString("ko-KR")}</p>` : ""}<button id="zip" class="primary" ${!p.approval ? 'disabled data-disabled="true"' : ""}>사진·상세 이미지 ZIP 내보내기</button><button id="export" ${!p.approval ? 'disabled data-disabled="true"' : ""}>등록 준비 JSON 내보내기</button><p class="muted">문구와 원본 이미지(data URL)를 담은 JSON입니다. 판매자센터에 직접 업로드되는 형식이 아닙니다. ZIP에는 원본 파일, 860px 상세 PNG, 문구와 manifest가 포함됩니다. 사진은 잘라내거나 생성하지 않고 비율을 유지합니다.</p><p class="muted">공식 API create / update / status: 지원 안 함</p></section>`;
 }
 function bind() {
+  document.querySelector<HTMLButtonElement>("#real-samples")!.onclick = () =>
+    void act(async () => {
+      const samples = await loadRealSamples();
+      await commitWorkspace(
+        [...products, ...samples],
+        "사용자 제공 상품 3종을 추가했습니다. 사진 사용 권한은 직접 확인하세요.",
+        undefined,
+        samples[0].id,
+      );
+    });
+  const applyAI = document.querySelector<HTMLButtonElement>("#apply-ai");
+  if (applyAI)
+    applyAI.onclick = () =>
+      void act(async () => {
+        const p = current()!,
+          proposal = p.agentProposal!;
+        if (proposal.sourceVersion !== p.version) {
+          message =
+            "상품 정보가 바뀌었습니다. 최신 정보로 AI 제안을 다시 받으세요.";
+          showMessage();
+          return;
+        }
+        await commit(
+          {
+            ...p,
+            draft: {
+              channel: "smartstore",
+              sourceVersion: p.version,
+              rulesVersion: "manual-v1",
+              generator: "flue-openrouter",
+              version: (p.draft?.version ?? 0) + 1,
+              title: proposal.title,
+              description: proposal.description,
+              assetIds: p.assets.map((a) => a.id),
+              layout: p.draft?.layout ?? {
+                order: "photos-first",
+                accent: "forest",
+              },
+            },
+            approval: undefined,
+            exported: undefined,
+            updatedAt: new Date().toISOString(),
+          },
+          "AI 제안을 적용했습니다. 미확인 사실·옵션·문구를 검수하세요.",
+        );
+      });
   document.querySelector<HTMLButtonElement>("#new")!.onclick = () => {
     void act(async () => {
       await commit(newProduct(), "새 상품을 추가했습니다.");
@@ -366,6 +417,32 @@ function bind() {
         void act(() => fn(new FormData(f), current()!), id);
       };
   };
+  form("ai-form", async (data, p) => {
+    if (!data.has("consent")) {
+      message = "사진·정보 전송과 비용 안내를 확인해 주세요.";
+      showMessage();
+      return;
+    }
+    message =
+      "AI가 사진과 상품 정보를 확인하고 있습니다. 최대 90초 정도 걸릴 수 있습니다.";
+    showMessage();
+    try {
+      const agentProposal = await requestProposal(
+        p,
+        String(data.get("instruction") ?? ""),
+      );
+      await commit(
+        { ...p, agentProposal },
+        "AI 제안을 받았습니다. 질문과 내용을 확인하고 적용하세요. 기존 초안은 유지했습니다.",
+      );
+    } catch (error) {
+      message =
+        error instanceof Error
+          ? error.message
+          : "AI 요청 실패. 기존 초안은 유지됩니다.";
+      showMessage();
+    }
+  });
   form("sku-form", async (data, p) => {
     const rows = document.querySelectorAll("[data-sku-row]"),
       skus: SKU[] = [];

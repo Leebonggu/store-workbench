@@ -8,3 +8,6 @@ dist/
 coverage/
 test-results/
 playwright-report/
+
+agent/data/
+agent/.flue/

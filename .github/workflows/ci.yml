@@ -18,14 +18,19 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: '22'
+          node-version: '22.22.0'
           cache: npm
       - run: npm ci
+      - run: npm --prefix agent ci
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: npm run check:agent
+      - run: npm run test:agent
+      - run: npm run build:agent
       - run: npm run build
       - run: npm audit --audit-level=high
+      - run: npm --prefix agent audit --audit-level=high
       - run: npx playwright install --with-deps chromium
       - run: npm run test:ui
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

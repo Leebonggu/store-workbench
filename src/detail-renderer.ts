@@ -46,7 +46,7 @@ export async function renderDetail(product: Product): Promise<DetailPage[]> {
   if (issue) throw Error(issue);
   if (!p.draft || p.draft.sourceVersion !== p.version)
     throw Error("최신 초안이 필요합니다.");
-  const accent = p.draft.layout?.accent === "ink" ? "#24333c" : "#265842";
+  const accent = p.draft.layout?.accent === "ink" ? "#24333c" : "#46715b";
   const sourceHash = await contentHash(p);
   const pages: Omit<DetailPage, "filename" | "sourceHash">[] = [];
   const heading = (ctx: CanvasRenderingContext2D) => {
@@ -64,16 +64,22 @@ export async function renderDetail(product: Product): Promise<DetailPage[]> {
       );
       const measure = canvas(1);
       const title = heading(measure.ctx);
-      const titleH = title.length * 60;
+      const titleH = title.length * 60 + 80;
       const height = PAD * 3 + titleH + photoH;
       if (height > MAX_HEIGHT)
         throw Error("제목이 너무 길어 상세 사진을 배치할 수 없습니다.");
       const { c, ctx } = canvas(height);
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = "#fffdf7";
       ctx.fillRect(0, 0, WIDTH, height);
+      ctx.fillStyle = "#e6efdf";
+      ctx.beginPath();
+      ctx.roundRect(PAD, 28, 260, 42, 21);
+      ctx.fill();
       ctx.fillStyle = accent;
+      ctx.font = "18px sans-serif";
+      ctx.fillText("작은 소품, 기분 좋은 하루", PAD + 18, 56);
       ctx.font = "bold 42px sans-serif";
-      title.forEach((line, i) => ctx.fillText(line, PAD, PAD + 44 + i * 60));
+      title.forEach((line, i) => ctx.fillText(line, PAD, PAD + 100 + i * 60));
       const scale = Math.min(
         (WIDTH - PAD * 2) / img.naturalWidth,
         photoH / img.naturalHeight,
@@ -103,14 +109,25 @@ export async function renderDetail(product: Product): Promise<DetailPage[]> {
       const part = lines.slice(offset, offset + perPage);
       const height = PAD * 2 + 110 + part.length * 48;
       const { c, ctx } = canvas(height);
-      ctx.fillStyle = "#fff";
+      ctx.fillStyle = "#fffdf7";
       ctx.fillRect(0, 0, WIDTH, height);
       ctx.fillStyle = accent;
       ctx.font = "bold 38px sans-serif";
-      ctx.fillText("상품 정보", PAD, PAD + 40);
+      ctx.fillText("꼼꼼히 살펴보세요 ♡", PAD, PAD + 40);
       ctx.fillStyle = "#26342c";
       ctx.font = "30px sans-serif";
-      part.forEach((line, i) => ctx.fillText(line, PAD, PAD + 110 + i * 48));
+      part.forEach((line, i) => {
+        const y = PAD + 110 + i * 48;
+        const section = /^\[.+\]$/.test(line.trim());
+        if (section) {
+          ctx.fillStyle = "#e6efdf";
+          ctx.beginPath();
+          ctx.roundRect(PAD - 12, y - 34, WIDTH - PAD * 2 + 24, 45, 12);
+          ctx.fill();
+        }
+        ctx.fillStyle = section || line.startsWith("Q.") ? accent : "#26342c";
+        ctx.fillText(section ? line.slice(1, -1) : line, PAD, y);
+      });
       pages.push({ bytes: await encode(c), width: WIDTH, height });
     }
   };

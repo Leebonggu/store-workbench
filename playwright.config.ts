@@ -7,7 +7,7 @@ export default defineConfig({
     channel: process.env.CI ? undefined : "chrome",
   },
   webServer: {
-    command: "npm run dev -- --port 4178 --strictPort",
+    command: "npm run dev:web -- --port 4178 --strictPort",
     url: "http://127.0.0.1:4178",
     reuseExistingServer: false,
   },

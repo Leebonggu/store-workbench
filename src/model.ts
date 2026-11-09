@@ -1,3 +1,7 @@
+import {
+  validateAgentOutput,
+  type AgentOutput,
+} from "../shared/agent-contract";
 import { parseImageDataUrl, inspectImage } from "./media";
 export const SCHEMA = 1 as const;
 export type FactKey = "name" | "price" | "material" | "size" | "origin";
@@ -35,7 +39,7 @@ export type Draft = {
   title: string;
   description: string;
   assetIds: string[];
-  generator: "local-template";
+  generator: "local-template" | "flue-openrouter";
   version: number;
 };
 export type Product = {
@@ -50,6 +54,7 @@ export type Product = {
   channelRights: boolean;
   rightsNote: string;
   draft?: Draft;
+  agentProposal?: AgentOutput;
   approval?: { hash: string; reviewer: string; at: string };
   exported?: { hash: string; at: string };
   updatedAt: string;
@@ -207,12 +212,13 @@ export function isProduct(value: unknown): value is Product {
         typeof a.source === "string" &&
         typeof a.rightsConfirmed === "boolean",
     ) &&
+    (!p.agentProposal || validateAgentOutput(p.agentProposal)) &&
     (!p.draft ||
       (p.draft.channel === "smartstore" &&
         p.draft.rulesVersion === "manual-v1" &&
         Number.isInteger(p.draft.sourceVersion) &&
         Number.isInteger(p.draft.version) &&
-        p.draft.generator === "local-template" &&
+        ["local-template", "flue-openrouter"].includes(p.draft.generator) &&
         typeof p.draft.title === "string" &&
         typeof p.draft.description === "string" &&
         p.draft.description.length <= 10000 &&

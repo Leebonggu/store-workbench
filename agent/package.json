@@ -1,0 +1,32 @@
+{
+  "name": "agent",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "start": "node dist/server.mjs",
+    "check:types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@flue/runtime": "2.2.0",
+    "hono": "^4.12.32",
+    "valibot": "1.5.0"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-ai": "0.87.1",
+    "@flue/cli": "2.2.0",
+    "@flue/vite": "2.2.0",
+    "@types/node": "^22.10.10",
+    "typescript": "^7.0.2",
+    "vite": "^8.0.14"
+  },
+  "overrides": {
+    "@earendil-works/pi-ai": "0.87.1",
+    "@earendil-works/pi-agent-core": "0.87.1",
+    "valibot": "1.5.0",
+    "@modelcontextprotocol/client": "2.3.0",
+    "@modelcontextprotocol/server": "2.3.0",
+    "@modelcontextprotocol/sdk": "1.32.0"
+  }
+}

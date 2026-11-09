@@ -1,78 +1,98 @@
-# Store Workbench · 상품 작업대
+# Store Workbench · 모어비쥬 상품 작업대
 
-**매장에는 들어왔지만 온라인에는 못 올린 신상품을, 확인된 정보와 실사 사진으로 등록 준비하는 소상공인 작업대입니다.**
+**오프라인 소품샵을 혼자 운영하는 아내를 위한 상품 상세페이지 제작 에이전트입니다.** 직접 찍은 사진과 기본 상품 정보로 빠진 정보를 확인하고, 상품명·상세 설명·구매 FAQ를 제안합니다. 판매자가 검수한 뒤 상세 PNG와 문구를 내려받아 스마트스토어에 등록합니다.
 
-사진 촬영·정보 입력·상세페이지 제작 때문에 밀린 일을 상품별 다음 행동으로 정리합니다. 스마트스토어 수동 등록 준비부터 시작하고, 공통 상품 정보 위에 판매처별 기능 블록을 조합합니다. 사실·사진 규격·말투의 일관성을 유지하면서 상품의 고유한 형태와 옵션은 보존합니다.
+노마드코더 AX School 챌린지 프로젝트입니다. [첫 과제와 클라이언트 맥락](docs/AX-SCHOOL.md) · [구현 현황](docs/implementation-status.md) · [사용 가이드](docs/USER-GUIDE.md) · [기획서](docs/PRD.md)
 
-**v0.2: API 키 없이 사용할 수 있는 로컬 수동 등록 준비 버전. 배포·실제 판매처 연동·실상품 현장 검증은 하지 않았습니다.**
+## 지금 되는 것 / 아직 안 되는 것
 
-[서비스 소개](docs/SERVICE.md) · [사용 가이드](docs/USER-GUIDE.md) · [구현 현황](docs/implementation-status.md) · [다음 작업](docs/ROADMAP.md) · [전체 PRD](docs/PRD.md) · [연동 준비](docs/CONNECTORS.md)
+| 지금 되는 것 | 아직 안 되는 것 |
+|---|---|
+| 웹에서 사진·상품 정보 입력, 모어비쥬 실제 상품 3종 불러오기 | 실제 스마트스토어 자동 등록·수정·조회 |
+| Flue 2.2 에이전트 + OpenRouter 연결 코드 | API 키를 사용한 실모델 품질·비용 검증: 아직 미실행 |
+| 상품 원장 읽기 → 질문·사진 관찰 후보·설명·FAQ·검색어 제안 → 구조 검증 도구 | 검색량 조사, 검색 순위·AI 답변 인용 보장 |
+| AI 제안 검토·적용·수정 요청, 기존 초안 보존 | 사진만으로 소재·크기·원산지·정품 여부 확정 |
+| 깔끔하고 귀여운 상세 PNG, 원본+문구+manifest ZIP 출력 | 실상품 5개 현장 시간 절감 검증, 배포·계정·기기 간 동기화 |
+| 출처·권리 확인, 버전 승인, IndexedDB 저장·비공개 백업 | 스마트스토어 공식 규칙·필수 고시 자동 판정 |
 
-![합성 상품으로 확인한 작업대](docs/images/workbench.png)
-
-## 지금 사용할 수 있는 흐름
-
-1. 상품 생성 → 원본 사진 추가·순서 조정 → 출처 기록
-2. 사실별 값·출처·판매자 확인 → 옵션 SKU·가격·재고·사진 연결
-3. 사진·채널 권리와 사용 기한 확인 → 확인된 사실로 로컬 템플릿 초안 작성
-4. 문구·상세 배치 편집 → 실제 상세 PNG 미리보기 → 현재 내용 승인
-5. 원본 이미지·상세 PNG·문구·manifest를 ZIP으로 내보내 판매자센터에서 수동 등록 준비
-6. 브라우저 IndexedDB 저장 → 비공개 전체 백업 → 검증 후 새 복사본으로 복원
-
-초안은 결정적 로컬 템플릿이며 AI가 아닙니다. 검색 문구를 정리하지만 검색량·공식 SEO 규칙·노출 향상은 검증하지 않습니다. **내보냄은 게시 완료가 아닙니다.** ZIP/JSON은 공식 일괄 업로드 양식이 아닙니다.
+AI 연결은 모의 모델로 **실제 Flue 런타임과 도구 호출**을 검증합니다. 브라우저 AI 테스트의 문구는 고정 응답이며 실모델 생성 결과가 아닙니다. 키가 없으면 안내를 표시하고 기존 로컬 기능을 사용할 수 있습니다.
 
 ## 실행
 
-Node.js 22.12 이상과 npm, 최신 Chrome을 권장합니다. 계정 연결·API 키는 필요 없습니다.
+Node.js **22.19 이상** 권장(`.nvmrc`: 22.22.0). 프로젝트에 고정한 Node 실행 파일도 npm 스크립트에서 사용합니다. 최신 Chrome을 권장합니다.
 
 ```sh
-npm ci
+npm run setup
+cp .env.example .env
+# .env 파일의 OPENROUTER_API_KEY에 개인 키를 입력하세요.
 npm run dev
 ```
 
-Vite가 표시하는 `http://127.0.0.1:5173`을 엽니다. 저장 자료는 브라우저 프로필과 주소(origin)에 묶입니다. 포트·브라우저를 바꾸면 백업을 복원해 이동하세요. Web Locks가 없는 환경은 안전한 저장을 차단합니다.
+웹: http://127.0.0.1:5173 · Flue 서버: http://127.0.0.1:3583
+
+이미 `.env`가 있다면 덮어쓰지 말고 편집하세요. 기본 모델은 `openrouter/google/gemini-2.5-flash`이며 `OPENROUTER_MODEL`로 변경합니다. 사진 입력과 도구 호출을 지원하고 Flue 모델 목록에 있는 모델이어야 합니다. 키는 서버에서만 사용하며 `VITE_` 변수에 넣지 않습니다. `.env`와 대화 DB는 Git에서 제외합니다.
+
+OpenRouter 호출은 유료입니다. 전송 항목은 사진, 확인된 상품 정보, 판매 조건, 현재 초안, 수정 요청입니다. 내부 권리 메모·출처 증빙은 보내지 않습니다. 사진 관찰과 AI 문구는 사람이 검수해야 합니다. 전용 키의 지출 한도를 OpenRouter에서 설정하세요. 앱은 동시 요청 1개, 요청 간격 5초, 작업 90초 제한과 복구 시도 1회를 적용하지만 금액 상한을 보장하지 않습니다.
+
+서버는 로컬 사용용입니다. 인터넷 배포 전에는 인증·사용자별 자료 분리·사용량 제한을 추가해야 합니다. Flue 대화와 전송 사진은 `agent/data/flue.db`에 남습니다. 개인 자료이므로 공유하지 마세요.
+
+## 사용 흐름
+
+1. **모어비쥬 3종 불러오기** 또는 새 상품을 만들고 사진을 추가합니다.
+2. 상품명·가격 등 아는 사실을 출처와 함께 확인합니다. 모르는 값은 비워둡니다.
+3. **AI 제안 받기**에서 전송·비용 안내를 확인하고 요청합니다.
+4. 질문과 사진 관찰 후보를 읽습니다. 새 사실은 상품 정보에 저장·확인하고 다시 요청합니다.
+5. 제안을 초안에 적용합니다. “더 짧게”, “랜덤 발송 안내를 강조해줘” 등으로 수정 요청할 수 있습니다.
+6. 사진 사용 권한·판매 범위를 확인한 뒤, 최신 정보로 초안을 만들고 PNG를 미리 봅니다.
+7. 최종 검수·승인 후 ZIP을 내려받습니다. 판매자센터에 이미지와 본문 텍스트를 옮겨 등록합니다.
+
+권리·상품 정보를 바꾸면 버전이 변경되므로 이전 제안은 다시 받아야 합니다. AI 요청 실패나 형식 오류는 기존 초안을 덮어쓰지 않습니다. 초안 적용은 승인을 해제합니다. 내보내기는 게시 완료가 아니며 ZIP/JSON은 공식 일괄 업로드 양식이 아닙니다.
+
+## SEO · AEO · GEO
+
+- 정확한 상품 유형·확인된 특징을 담은 상품명과 관련 검색어 제안. 키워드 나열·검색량 수치 창작 금지.
+- 짧은 상품 요약과 “1개인가요?”, “디자인 선택 가능한가요?” 같은 구매 FAQ.
+- 상품명·가격·옵션·크기·배송 조건을 일관된 텍스트로 제공. 이미지와 본문 텍스트를 함께 출력.
+- 카테고리·상품 속성·필수 고시·배송·반품은 판매자센터에서 별도 확인. 웹사이트용 메타태그·구조화 데이터를 스마트스토어에 적용했다고 주장하지 않음.
+
+[네이버 콘텐츠 작성 권장 사항](https://searchadvisor.naver.com/guide/content-basic)과 [Google AI 검색 안내](https://developers.google.com/search/docs/appearance/ai-features)를 참고했습니다. 스마트스토어 전용 랭킹 규칙으로 해석하지 않습니다.
+
+## 출력 예시
+
+사용자 제공 사진 + 고정 테스트 문구로 렌더링한 예시입니다. 실제 AI 생성 결과는 아닙니다.
+
+![응원 키링 상세 이미지](docs/images/morebijou-detail-v03.png)
+
+[상품 정보·FAQ 이미지 보기](docs/images/morebijou-info-v03.png)
+
+## 구조와 검증
+
+```text
+기존 Vite 웹 → /api 프록시 → Flue + Hono 서버 → OpenRouter
+                               ├─ inspect_product: 확인 사실·누락 읽기
+                               └─ submit_proposal: 형식 검증·판매 조건 보존
+웹 검수 → 상세 PNG 렌더링 → 승인 버전 ZIP
+```
+
+- `src/`: 웹, 상품 원장, 승인·출력·저장
+- `agent/src/`: Flue 에이전트, 서버 경계, SQLite 대화 저장
+- `shared/`: 공개 AI 요청·응답 계약
+- `fixtures/morebijou.json`: 사용자가 제공한 테스트 상품 정보. 페이지 직접 검증 미완료
+- `tests/`, `agent/tests/`: 단위·브라우저·실제 Flue 도구 호출 테스트
 
 ```sh
 npm run lint
 npm run typecheck
 npm test
+npm run check:agent
+npm run test:agent
 npm run build
+npm run build:agent
 npm run test:ui
 npm audit --audit-level=high
+npm --prefix agent audit --audit-level=high
 ```
 
-로컬 UI 검사는 설치된 Google Chrome과 비어 있는 localhost 4178을 사용합니다. CI에서는 Playwright Chromium을 설치합니다. `npm run build`는 로컬 빌드이며 배포하지 않습니다. 최신 검증: 단위 29개, 브라우저 10개, lint·typecheck·build 통과. [검증 범위와 한계](docs/implementation-status.md)를 확인하세요.
+Flue 2.3과 자동 선택된 Pi 1.5 조합에서 `Type` export 오류가 확인되어 Flue 2.2 / Pi 0.87.1로 고정했습니다. 보안 수정된 Valibot·MCP 의존성도 overrides로 고정하며 lockfile을 커밋합니다.
 
-## 기능 블록과 폴더
-
-블록은 `meta + run(input) → Result<output>` 계약으로 연결합니다. 공통 Product와 원본 ID·버전 lineage, 입력/출력 검증, 구조화 오류, 승인 종류, 비용·전송·부작용을 명시합니다. 현재 실행 블록은 로컬 처리이며 외부 전송과 유료 호출이 없습니다. 작은 모듈형 단일 앱으로 시작하며 실제 재사용처가 생기면 필요한 블록만 패키지로 추출합니다.
-
-| 블록/경계 | 파일 | 현재 역할 |
-|---|---|---|
-| 공통 모델·계약 | `src/model.ts`, `src/blocks/contract.ts` | 사실/사진/SKU/초안/승인, 검증·lineage·오류 |
-| 촬영·자산 | `src/blocks/capture.ts`, `assets.ts`, `src/media.ts` | 촬영 안내, 원본·출처·SHA-256·이미지 검증 |
-| 후보·사실 검수 | `src/blocks/facts.ts` | 수동 후보 파서와 사람 확인을 분리 |
-| 권리 | `src/blocks/rights.ts` | 사진/채널 보류, 한국 날짜 기준 기한 |
-| 문구·상세 | `src/blocks/copy.ts`, `detail.ts`, `src/pipeline.ts` | 확인 사실만 생성, 편집 가능한 초안 |
-| 상세 이미지 | `src/detail-renderer.ts` | 비율을 유지하는 실사와 텍스트 PNG |
-| 승인·출력 | `src/blocks/approval.ts`, `channel.ts`, `package.ts` | 버전·내용 해시 승인, 공개 필드 JSON/ZIP |
-| 선택형 연동 준비 | `src/blocks/providers.ts`, `smartstore-mock.ts` | 모의 계약 테스트만, 실연동 비활성 |
-| 저장·복구 | `src/storage.ts`, `database.ts`, `backup.ts` | IndexedDB, 탭 잠금·스냅샷 비교, 비파괴 복원 |
-| 화면 | `src/main.ts`, `style.css` | 다음 행동, 편집 보호, 사람 검수 |
-| 검증 | `tests/`, `.github/workflows/ci.yml` | 단위·실제 브라우저·공개 CI |
-
-기존 프로젝트의 구조를 참고했지만 소스를 복사하지 않고 독립적으로 작성했습니다. 시스템 폰트와 합성 테스트 자료만 포함합니다. 범용 플러그인 마켓·드래그앤드롭 워크플로·마이크로서비스는 구현하지 않았습니다.
-
-## 데이터와 현재 한계
-
-- PNG/JPEG/정적 WebP, 파일당 2MiB·상품당 3장. 원본 바이트를 보존합니다. EXIF 등 원본 메타데이터도 출력되므로 사진 자체를 확인하세요.
-- 판매자 확인 정보만 자동 문구에 넣습니다. 수동 편집의 사실 여부와 상품/사진 권리의 적법성은 자동 판단하지 않습니다.
-- 내용 변경 시 승인을 무효화합니다. 저장·다운로드 직전 공유 잠금에서 스냅샷을 확인해 다른 탭의 자료를 덮어쓰지 않습니다.
-- 공개 준비 ZIP에서 내부 출처·권리 메모·검수자는 제외합니다. **비공개 백업에는 이 정보가 포함됩니다.** 구분해 보관하세요.
-- 로컬 저장은 인증·암호화된 서버가 아니며 브라우저 데이터 삭제 시 유실될 수 있습니다. 백업을 따로 보관하세요.
-- AI/OCR 실호출, 공식 스마트스토어/쿠팡 등록·수정·조회, 인증·협업·주문·재고 동기화는 미지원입니다. 원격 `create/update/status`는 `UNSUPPORTED`를 반환합니다.
-- 실상품 5개 시험, 권리 문제 유형 확인, 판매자 필수 고시·배송·인증 매핑은 후속입니다. 로컬 승인은 공식 등록 가능 판정이 아닙니다.
-
-초기 독립 검수 결함 [#1](https://github.com/Leebonggu/store-workbench/issues/1)·[#2](https://github.com/Leebonggu/store-workbench/issues/2)·[#3](https://github.com/Leebonggu/store-workbench/issues/3)은 회귀 테스트와 함께 수정했습니다. 현재 사용 흐름은 [#4](https://github.com/Leebonggu/store-workbench/issues/4)에서 추적합니다. CI는 검증만 실행하며 배포 단계가 없습니다.
-
-추가 독립 검수 [#5](https://github.com/Leebonggu/store-workbench/issues/5): ZIP 블록에서 상세 PNG의 청크·CRC·압축 스트림·스캔라인 크기와 필터까지 검증합니다. 지원 출력은 비인터레이스 8비트 RGB/RGBA PNG이며, 가짜 헤더·잘림·압축 손상을 거부합니다.
+2026-11-09 로컬 검증: 단위 31개, Flue 런타임 2개, 브라우저 12개 통과. 웹/서버 타입검사·빌드와 양쪽 의존성 audit 통과(취약점 0건). 실모델 검증은 별도입니다.

@@ -444,3 +444,37 @@ form > button {
   height: auto;
   border: 1px solid #d8dfd3;
 }
+
+/* Morebijou: light, readable, with small playful accents. */
+body {
+  background: #f8f7f0;
+}
+.card,
+.welcome,
+aside {
+  border-radius: 22px;
+}
+.intro small {
+  color: #58765c;
+  letter-spacing: 0.08em;
+}
+.card h3 {
+  color: #355c46;
+}
+button {
+  border-radius: 12px;
+}
+.ai-panel {
+  background: #f0f5e9;
+  border: 1px solid #d8e5cc;
+  padding: 24px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+.ai-panel textarea {
+  min-height: 90px;
+}
+.ai-result {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

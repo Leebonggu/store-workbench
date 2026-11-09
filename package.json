@@ -1,29 +1,35 @@
 {
   "name": "store-workbench",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
+    "dev": "node scripts/dev.mjs",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
     "preview": "vite preview --host 127.0.0.1",
     "test:ui": "playwright test",
-    "format": "prettier --write src tests playwright.config.ts package.json tsconfig.json",
-    "format:check": "prettier --check src tests playwright.config.ts package.json tsconfig.json",
-    "lint": "tsc --noEmit --noUnusedLocals --noUnusedParameters && npm run format:check"
+    "format": "prettier --write src tests playwright.config.ts package.json tsconfig.json shared scripts vite.config.ts agent/src agent/tests agent/vite.config.ts agent/package.json",
+    "format:check": "prettier --check src tests playwright.config.ts package.json tsconfig.json shared scripts vite.config.ts agent/src agent/tests agent/vite.config.ts agent/package.json",
+    "lint": "tsc --noEmit --noUnusedLocals --noUnusedParameters && npm run format:check",
+    "dev:web": "vite --host 127.0.0.1",
+    "setup": "npm ci && npm --prefix agent ci",
+    "test:agent": "node --import tsx --test agent/tests/*.test.ts",
+    "check:agent": "node node_modules/typescript/bin/tsc --noEmit -p agent/tsconfig.json",
+    "build:agent": "npm --prefix agent run build"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
     "@types/node": "22.18.6",
+    "node": "22.22.0",
     "prettier": "3.9.10",
     "tsx": "4.20.6",
     "typescript": "5.9.3",
     "vite": "7.3.7"
   },
   "engines": {
-    "node": ">=22.12"
+    "node": ">=22.19.0"
   },
   "dependencies": {
     "fflate": "0.8.3"
